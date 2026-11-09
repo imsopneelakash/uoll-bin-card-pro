@@ -65,6 +65,16 @@ input[type=search],input[type=number],select{width:100%;padding:11px 12px;border
 .chk{display:flex;align-items:center;gap:8px}
 .item.ro{cursor:default}
 dialog{max-height:90vh;overflow:auto}
+
+.acts{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:14px}
+.acts .btn.in{background:#1e7a3c}.acts .btn.out{background:#b3261e}.acts .btn.cnt{background:#1fa3c8}.acts .btn.opn{background:#4f5d54}
+.sum{display:grid;gap:8px;margin-bottom:6px}
+.sumc{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--acc);border-radius:12px;padding:12px 16px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.hint{font-size:13px;color:var(--mut);margin-top:6px}
+.two{display:flex;gap:8px}.two>div{flex:1;min-width:0}
+textarea{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:#fbfdfb;font:inherit;resize:vertical}
+.badge{font-size:12px;font-weight:700;border-radius:6px;padding:2px 8px;color:#fff;white-space:nowrap}
+.b-in{background:#1e7a3c}.b-out{background:#b3261e}.b-count{background:#1fa3c8}.b-opening{background:#4f5d54}
 </style>
 </head>
 <body>
@@ -118,6 +128,28 @@ dialog{max-height:90vh;overflow:auto}
     <div class="row">
       <button class="btn light" value="cancel" formnovalidate>Cancel</button>
       <button class="btn" value="ok">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="edlg">
+  <form id="eForm">
+    <h3 id="eTitle"></h3>
+    <label for="eQ">Product</label>
+    <input type="search" id="eQ" placeholder="Search by name or code" autocomplete="off">
+    <select id="eProd" size="5" style="margin-top:6px" aria-label="Select product"></select>
+    <div class="hint" id="eBal"></div>
+    <div class="two">
+      <div><label for="eCtn">Cartons</label><input type="number" id="eCtn" min="0" step="1" value="0"></div>
+      <div><label for="ePcs">Loose pcs</label><input type="number" id="ePcs" min="0" step="1" value="0"></div>
+    </div>
+    <div class="hint" id="eTot"></div>
+    <label for="eNote">Note (optional)</label>
+    <textarea id="eNote" rows="2" maxlength="300"></textarea>
+    <div class="err" id="eErr" role="alert"></div>
+    <div class="row">
+      <button type="button" class="btn light" id="eCancel">Cancel</button>
+      <button type="submit" class="btn" id="eSave">Save entry</button>
     </div>
   </form>
 </dialog>
@@ -198,10 +230,15 @@ async function renderWarehouses(el){
   const { data, error } = await db.from('warehouses').select('*').order('name');
   if (error) throw error;
   const rows = (data || []).filter(w => isAdmin() || w.is_active);
+  let sumHtml = '';
+  if (isAdmin()) {
+    const { data: sm, error: se } = await db.rpc('inventory_summary');
+    if (!se && sm) sumHtml = '<h3 class="cat">Inventory summary</h3><div class="sum">' + sm.map(x => `<div class="sumc"><b>${esc(x.warehouse_name)}</b><span>${Number(x.total_pcs).toLocaleString('en-US')} pcs &middot; &#2547; ${Number(x.total_value).toLocaleString('en-US', { maximumFractionDigits: 0 })}</span></div>`).join('') + '</div>';
+  }
   el.innerHTML = `<div class="crumb"><h2>Warehouses</h2>${isAdmin() ? '<button class="btn" id="addWh">Add warehouse</button>' : ''}</div>
     <div class="list">${rows.length ? rows.map(w => `<button class="item ${w.is_active ? '' : 'off'}" data-id="${w.id}" data-name="${esc(w.name)}">
       <span class="grow"><b>${esc(w.name)}</b><span class="sub">Tap to view shelves</span></span>${w.is_active ? '' : '<span class="tag">Inactive</span>'}</button>`).join('')
-      : '<div class="empty">No warehouses yet. Add the first warehouse to get started.</div>'}</div>`;
+      : '<div class="empty">No warehouses yet. Add the first warehouse to get started.</div>'}</div>${sumHtml}`;
   el.querySelectorAll('.item').forEach(b => b.onclick = () => go({ t: 'shelves', wh: { id: b.dataset.id, name: b.dataset.name } }));
   const add = $('#addWh');
   if (add) add.onclick = async () => {
@@ -239,17 +276,84 @@ async function renderShelves(el){
   };
 }
 
+const TYPE_LABEL = { opening: 'Opening balance', in: 'Stock in', out: 'Stock out', count: 'Physical count' };
+const TYPE_HINT = { opening: 'Sets the starting balance. The shelf balance becomes the quantity you enter.',
+  in: 'Adds the quantity to the shelf balance.', out: 'Removes the quantity from the shelf balance.',
+  count: 'Physical count. The shelf balance becomes the counted quantity.' };
+
+function entryDialog(type, shelf, products, stockMap){
+  return new Promise(res => {
+    const d = $('#edlg'), q = $('#eQ'), sel = $('#eProd'), ctn = $('#eCtn'), pcs = $('#ePcs'), err = $('#eErr'), save = $('#eSave');
+    $('#eTitle').textContent = TYPE_LABEL[type] + ' - Shelf ' + shelf.name;
+    ctn.value = 0; pcs.value = 0; $('#eNote').value = ''; err.textContent = ''; q.value = '';
+    const cur = () => products.find(p => p.id === sel.value);
+    const calc = () => {
+      const p = cur(); const bal = p ? (stockMap[p.id] || 0) : 0;
+      if (!p) { $('#eBal').textContent = 'Select a product.'; $('#eTot').textContent = ''; return; }
+      const per = p.pcs_per_carton || 1, tot = (parseInt(ctn.value, 10) || 0) * per + (parseInt(pcs.value, 10) || 0);
+      $('#eBal').textContent = 'Current balance on this shelf: ' + bal + ' pcs (' + Math.floor(bal / per) + ' cartons + ' + (bal % per) + ' pcs). ' + per + ' pcs per carton.';
+      const after = type === 'in' ? bal + tot : type === 'out' ? bal - tot : tot;
+      $('#eTot').textContent = TYPE_HINT[type] + ' Entry: ' + tot + ' pcs. New balance: ' + after + ' pcs.';
+    };
+    const fill = () => {
+      const t = q.value.trim().toLowerCase(), keep = sel.value;
+      const rows = products.filter(p => !t || p.name.toLowerCase().includes(t) || p.code.toLowerCase().includes(t));
+      sel.innerHTML = rows.map(p => `<option value="${p.id}">${esc(p.code)} - ${esc(p.name)}</option>`).join('');
+      if (rows.some(p => p.id === keep)) sel.value = keep; else if (rows.length) sel.value = rows[0].id;
+      calc();
+    };
+    q.oninput = fill; sel.onchange = calc; ctn.oninput = calc; pcs.oninput = calc;
+    $('#eCancel').onclick = () => d.close();
+    $('#eForm').onsubmit = async e => {
+      e.preventDefault(); err.textContent = '';
+      const p = cur(); if (!p) { err.textContent = 'Select a product.'; return; }
+      const c = parseInt(ctn.value, 10) || 0, n = parseInt(pcs.value, 10) || 0;
+      if (c < 0 || n < 0) { err.textContent = 'Quantity cannot be negative.'; return; }
+      if (type !== 'count' && type !== 'opening' && c === 0 && n === 0) { err.textContent = 'Enter a quantity greater than zero.'; return; }
+      save.disabled = true; save.textContent = 'Saving...';
+      const { error } = await db.rpc('add_bin_entry', { p_shelf: shelf.id, p_product: p.id, p_type: type, p_cartons: c, p_pcs: n, p_note: $('#eNote').value.trim() || null });
+      save.disabled = false; save.textContent = 'Save entry';
+      if (error) { err.textContent = error.message || 'Could not save the entry.'; return; }
+      d.close('ok');
+    };
+    d.onclose = () => res(d.returnValue === 'ok');
+    d.returnValue = ''; fill(); d.showModal();
+  });
+}
+
 async function renderShelf(el){
   const { wh, shelf } = view;
-  const { data, error } = await db.from('stock').select('qty_pcs, products(code,name,pcs_per_carton)').eq('shelf_id', shelf.id);
-  if (error) throw error;
-  const rows = (data || []).filter(r => r.qty_pcs > 0 && r.products).sort((a, b) => a.products.name.localeCompare(b.products.name));
+  const [st, pr, hist] = await Promise.all([
+    db.from('stock').select('product_id, qty_pcs, products(code,name,pcs_per_carton)').eq('shelf_id', shelf.id),
+    db.from('products').select('id,code,name,pcs_per_carton,is_active').order('name'),
+    db.from('bin_card_entries').select('created_at, entry_type, cartons, pcs, total_pcs, balance_before, balance_after, note, products(code,name)')
+      .eq('shelf_id', shelf.id).order('created_at', { ascending: false }).limit(40)
+  ]);
+  if (st.error) throw st.error;
+  const stockMap = {}; (st.data || []).forEach(r => stockMap[r.product_id] = r.qty_pcs);
+  const products = (pr.data || []).filter(p => p.is_active);
+  const rows = (st.data || []).filter(r => r.qty_pcs > 0 && r.products).sort((a, b) => a.products.name.localeCompare(b.products.name));
+  const h = hist.error ? null : (hist.data || []);
+  const fmt = t => new Date(t).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   el.innerHTML = `<button class="back" id="bk">&larr; ${esc(wh.name)}</button>
     <div class="crumb"><h2>Shelf ${esc(shelf.name)}</h2></div>
+    <div class="acts">
+      <button class="btn in" data-ty="in">Stock in</button>
+      <button class="btn out" data-ty="out">Stock out</button>
+      ${isAdmin() ? '<button class="btn cnt" data-ty="count">Physical count</button><button class="btn opn" data-ty="opening">Opening balance</button>' : ''}
+    </div>
+    <h3 class="cat">Current stock</h3>
     ${rows.length ? `<div class="scroll"><table><thead><tr><th>Code</th><th>Product</th><th class="n">Cartons</th><th class="n">Pcs</th><th class="n">Total pcs</th></tr></thead><tbody>
     ${rows.map(r => { const per = r.products.pcs_per_carton || 1; return `<tr><td>${esc(r.products.code)}</td><td>${esc(r.products.name)}</td><td class="n">${Math.floor(r.qty_pcs / per)}</td><td class="n">${r.qty_pcs % per}</td><td class="n">${r.qty_pcs}</td></tr>`; }).join('')}
-    </tbody></table></div>` : '<div class="empty">No stock on this shelf yet.</div>'}`;
+    </tbody></table></div>` : '<div class="empty">No stock on this shelf yet.</div>'}
+    ${h ? `<h3 class="cat">Bin card history (latest 40)</h3>${h.length ? `<div class="scroll"><table><thead><tr><th>Date</th><th>Type</th><th>Product</th><th class="n">Qty (pcs)</th><th class="n">Balance</th><th>Note</th></tr></thead><tbody>
+    ${h.map(x => `<tr><td>${esc(fmt(x.created_at))}</td><td><span class="badge b-${esc(x.entry_type)}">${esc(TYPE_LABEL[x.entry_type] || x.entry_type)}</span></td><td>${esc(x.products ? x.products.code + ' - ' + x.products.name : '')}</td><td class="n">${x.total_pcs}</td><td class="n">${x.balance_before} &rarr; ${x.balance_after}</td><td>${esc(x.note || '')}</td></tr>`).join('')}
+    </tbody></table></div>` : '<div class="empty">No entries yet.</div>'}` : ''}`;
   $('#bk').onclick = () => go({ t: 'shelves', wh });
+  el.querySelectorAll('[data-ty]').forEach(b => b.onclick = async () => {
+    if (!products.length) return toast('No active products available.');
+    if (await entryDialog(b.dataset.ty, shelf, products, stockMap)) { toast('Entry saved.'); render(); }
+  });
 }
 
 /* ---------- Products ---------- */
