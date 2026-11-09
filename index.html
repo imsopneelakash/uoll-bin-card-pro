@@ -375,20 +375,21 @@ async function renderCount(el){
       const r = res(id); if (r.k === 'ok') ok++; else if (r.k === 'bad') bad++; else none++;
       const row = el.querySelector(`tr[data-id="${id}"]`);
       row.querySelector('.ct').textContent = r.k === 'none' ? '-' : r.t;
-      row.querySelector('.rs').innerHTML = badge(r);
+      if (isAdmin()) row.querySelector('.rs').innerHTML = badge(r);
     });
-    $('#csum').innerHTML = `<b style="color:var(--pri)">Match: ${ok}</b> &middot; <b style="color:var(--err)">Mismatch: ${bad}</b> &middot; Not counted: ${none}`;
+    $('#csum').innerHTML = isAdmin() ? `<b style="color:var(--pri)">Match: ${ok}</b> &middot; <b style="color:var(--err)">Mismatch: ${bad}</b> &middot; Not counted: ${none}`
+      : `Counted: ${ids.length - none} of ${ids.length}`;
   };
   const draw = () => {
     const extra = prods.filter(p => p.is_active && !ids.includes(p.id));
     el.innerHTML = `<button class="back" id="bk">&larr; Shelf ${esc(shelf.name)}</button>
       <div class="crumb"><h2>Physical count - Shelf ${esc(shelf.name)}</h2></div>
-      <div class="hint" style="margin:0 0 12px">Enter the counted quantity for each product. Leave a row empty to skip it. Counted pcs are compared with the system balance.</div>
-      ${ids.length ? `<div class="scroll"><table><thead><tr><th>Code</th><th>Product</th><th class="n">System (pcs)</th><th>Cartons</th><th>Loose pcs</th><th class="n">Counted</th><th>Result</th></tr></thead><tbody>
-      ${ids.map(id => { const p = byId[id], v = vals[id] || { c: '', n: '' }; return `<tr data-id="${id}"><td>${esc(p.code)}</td><td>${esc(p.name)}</td><td class="n">${sys[id] || 0}</td>
+      <div class="hint" style="margin:0 0 12px">Enter the counted quantity for each product. Leave a row empty to skip it. ${isAdmin() ? 'Counted pcs are compared with the system balance.' : 'Count what you see on the shelf and enter it here.'}</div>
+      ${ids.length ? `<div class="scroll"><table><thead><tr><th>Code</th><th>Product</th>${isAdmin() ? '<th class="n">System (pcs)</th>' : ''}<th>Cartons</th><th>Loose pcs</th><th class="n">Counted</th>${isAdmin() ? '<th>Result</th>' : ''}</tr></thead><tbody>
+      ${ids.map(id => { const p = byId[id], v = vals[id] || { c: '', n: '' }; return `<tr data-id="${id}"><td>${esc(p.code)}</td><td>${esc(p.name)}</td>${isAdmin() ? `<td class="n">${sys[id] || 0}</td>` : ''}
         <td><input class="ci" type="number" min="0" step="1" data-f="c" value="${esc(v.c)}" aria-label="Counted cartons"></td>
         <td><input class="ci" type="number" min="0" step="1" data-f="n" value="${esc(v.n)}" aria-label="Counted loose pcs"></td>
-        <td class="n ct">-</td><td class="rs"></td></tr>`; }).join('')}</tbody></table></div>` : '<div class="empty">No stock recorded on this shelf. Add a product below if you found stock.</div>'}
+        <td class="n ct">-</td>${isAdmin() ? '<td class="rs"></td>' : ''}</tr>`; }).join('')}</tbody></table></div>` : '<div class="empty">No stock recorded on this shelf. Add a product below if you found stock.</div>'}
       <div class="row" style="margin-top:12px"><select id="xp" aria-label="Add a product not in the system balance"><option value="">Add a product not on the system list...</option>${extra.map(p => `<option value="${p.id}">${esc(p.code)} - ${esc(p.name)}</option>`).join('')}</select><button class="btn light" id="xa">Add</button></div>
       <div class="cbar"><span id="csum"></span><button class="btn" id="csave">Save count</button></div>`;
     $('#bk').onclick = () => go({ t: 'shelf', wh, shelf });
@@ -401,7 +402,7 @@ async function renderCount(el){
     const items = ids.map(id => ({ id, r: res(id) })).filter(x => x.r.k !== 'none');
     if (!items.length) return toast('Enter the counted quantity for at least one product.');
     const bad = items.filter(x => x.r.k === 'bad').length;
-    if (bad && !confirm(bad + ' product(s) do not match the system balance. Saving will set the shelf balance to the counted quantity for those products. Continue?')) return;
+    if (isAdmin() && bad && !confirm(bad + ' product(s) do not match the system balance. Saving will set the shelf balance to the counted quantity for those products. Continue?')) return;
     const btn = $('#csave'); btn.disabled = true; btn.textContent = 'Saving...';
     let done = 0;
     for (const x of items) {
@@ -411,7 +412,7 @@ async function renderCount(el){
       if (error) { btn.disabled = false; btn.textContent = 'Save count'; return toast((done ? done + ' saved. ' : '') + (error.message || 'Could not save the count.')); }
       done++;
     }
-    toast(`Count saved: ${items.length - bad} matched, ${bad} mismatched.`);
+    toast(isAdmin() ? `Count saved: ${items.length - bad} matched, ${bad} mismatched.` : `Count saved for ${items.length} product(s).`);
     go({ t: 'shelf', wh, shelf });
   };
   draw();
@@ -436,7 +437,8 @@ async function renderShelf(el){
     <div class="acts">
       <button class="btn in" data-ty="in">Stock in</button>
       <button class="btn out" data-ty="transfer">Transfer out</button>
-      ${isAdmin() ? '<button class="btn cnt" data-ty="count">Physical count</button><button class="btn opn" data-ty="opening">Opening balance</button>' : ''}
+      <button class="btn cnt" data-ty="count">Physical count</button>
+      ${isAdmin() ? '<button class="btn opn" data-ty="opening">Opening balance</button>' : ''}
     </div>
     <h3 class="cat">Current stock</h3>
     ${rows.length ? `<div class="scroll"><table><thead><tr><th>Code</th><th>Product</th><th class="n">Cartons</th><th class="n">Pcs</th><th class="n">Total pcs</th></tr></thead><tbody>
