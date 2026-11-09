@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1f5a34">
+<title>UOLL Bin Card Pro</title>
+<style>
+:root{--bg:#eef3ee;--card:#fff;--ink:#16251b;--mut:#62736a;--pri:#1f5a34;--pri-d:#143d23;--acc:#e0a526;--line:#d6e0d7;--err:#b3261e}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);font-size:16px;line-height:1.45;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+button,input{font:inherit}
+.hidden{display:none!important}
+.wrap{max-width:640px;margin:0 auto;padding:0 16px 40px}
+header.bar{background:var(--pri);color:#fff;padding:14px 16px;position:sticky;top:0;z-index:5;border-bottom:3px solid var(--acc)}
+.bar-in{max-width:640px;margin:0 auto;display:flex;align-items:center;gap:12px}
+.bar h1{font-size:18px;font-weight:700;flex:1;letter-spacing:.2px}
+.bar small{display:block;font-size:12px;opacity:.8;font-weight:400}
+.role{background:var(--acc);color:#2a1d00;border-radius:99px;padding:2px 10px;font-size:12px;font-weight:700;text-transform:capitalize}
+.btn{border:0;border-radius:10px;padding:11px 16px;font-weight:600;cursor:pointer;background:var(--pri);color:#fff}
+.btn:hover{background:var(--pri-d)}
+.btn.ghost{background:transparent;color:inherit;border:1px solid currentColor;padding:6px 12px;font-size:14px}
+.btn.light{background:#fff;color:var(--pri);border:1px solid var(--line)}
+:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.crumb{display:flex;align-items:center;gap:8px;margin:18px 0 12px}
+.crumb h2{font-size:20px;flex:1}
+.back{background:none;border:0;color:var(--pri);font-weight:600;cursor:pointer;padding:6px 0}
+.list{display:grid;gap:10px}
+.item{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--pri);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px;width:100%;text-align:left;cursor:pointer;color:inherit}
+.item.off{border-left-color:var(--mut);opacity:.7}
+.item b{display:block}
+.item span.sub{color:var(--mut);font-size:14px}
+.item .grow{flex:1}
+.tag{font-size:12px;background:#e8eee9;color:var(--mut);border-radius:6px;padding:2px 8px}
+.empty{background:var(--card);border:1px dashed var(--line);border-radius:12px;padding:28px 16px;text-align:center;color:var(--mut)}
+.row{display:flex;gap:8px;margin-bottom:12px}
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;font-size:15px}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line)}
+th{background:#e8eee9;font-size:13px;color:var(--mut)}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+.scroll{overflow-x:auto}
+#login{min-height:100%;display:grid;place-items:center;padding:20px}
+.login-box{background:var(--card);border-radius:16px;border:1px solid var(--line);padding:28px 22px;width:100%;max-width:380px;border-top:6px solid var(--pri)}
+.login-box h1{font-size:24px;color:var(--pri)}
+.login-box p{color:var(--mut);margin:4px 0 20px}
+label{display:block;font-size:14px;font-weight:600;margin:12px 0 4px}
+input[type=email],input[type=password],input[type=text]{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:#fbfdfb}
+.err{color:var(--err);font-size:14px;margin-top:12px;min-height:20px}
+.login-box .btn{width:100%;margin-top:16px}
+dialog{border:0;border-radius:14px;padding:20px;width:min(90vw,380px)}
+dialog::backdrop{background:rgba(10,30,15,.5)}
+dialog h3{margin-bottom:10px}
+dialog .row{margin:16px 0 0;justify-content:flex-end}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#16251b;color:#fff;padding:10px 16px;border-radius:10px;font-size:14px;z-index:20;max-width:90vw}
+</style>
+</head>
+<body>
+
+<section id="login" class="hidden">
+  <form class="login-box" id="loginForm">
+    <h1>UOLL Bin Card Pro</h1>
+    <p>Sign in to manage warehouse bin cards.</p>
+    <label for="em">Email</label>
+    <input id="em" type="email" autocomplete="username" required>
+    <label for="pw">Password</label>
+    <input id="pw" type="password" autocomplete="current-password" required>
+    <div class="err" id="loginErr" role="alert"></div>
+    <button class="btn" id="loginBtn" type="submit">Sign in</button>
+  </form>
+</section>
+
+<section id="app" class="hidden">
+  <header class="bar"><div class="bar-in">
+    <h1 id="who">Bin Card Pro<small id="whoSub"></small></h1>
+    <span class="role" id="roleTag"></span>
+    <button class="btn ghost" id="logout">Sign out</button>
+  </div></header>
+  <main class="wrap" id="view"></main>
+</section>
+
+<dialog id="dlg">
+  <form method="dialog" id="dlgForm">
+    <h3 id="dlgTitle"></h3>
+    <input type="text" id="dlgInput" required maxlength="80">
+    <div class="row">
+      <button class="btn light" value="cancel" formnovalidate>Cancel</button>
+      <button class="btn" value="ok">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="toast" class="hidden" role="status"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+const SUPABASE_URL = 'https://dpyjtkeduobidspprbrv.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_fxp9DGFh-uv3uI2u__U9oA_CfiktC_w';
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let me = null;
+let view = { t: 'wh' };
+
+function toast(msg){
+  const t = $('#toast'); t.textContent = msg; t.classList.remove('hidden');
+  clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.add('hidden'), 3200);
+}
+function askName(title, value = ''){
+  return new Promise(res => {
+    const d = $('#dlg'); $('#dlgTitle').textContent = title; $('#dlgInput').value = value;
+    d.onclose = () => res(d.returnValue === 'ok' ? $('#dlgInput').value.trim() : null);
+    d.showModal(); $('#dlgInput').focus();
+  });
+}
+const isAdmin = () => me && (me.role === 'master' || me.role === 'admin');
+
+/* ---------- Auth ---------- */
+async function boot(){
+  const { data } = await db.auth.getSession();
+  if (data.session) await enter(); else showLogin();
+}
+function showLogin(msg = ''){
+  $('#app').classList.add('hidden'); $('#login').classList.remove('hidden');
+  $('#loginErr').textContent = msg; $('#pw').value = '';
+}
+async function enter(){
+  const { data: u } = await db.auth.getUser();
+  if (!u.user) return showLogin();
+  const { data, error } = await db.from('profiles').select('*').eq('id', u.user.id).single();
+  if (error || !data) { await db.auth.signOut(); return showLogin('Your profile could not be loaded. Contact the administrator.'); }
+  if (!data.is_active) { await db.auth.signOut(); return showLogin('This account is deactivated. Contact the administrator.'); }
+  me = data;
+  $('#whoSub').textContent = me.full_name || me.email || '';
+  $('#roleTag').textContent = me.role;
+  $('#login').classList.add('hidden'); $('#app').classList.remove('hidden');
+  view = { t: 'wh' }; render();
+}
+$('#loginForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const b = $('#loginBtn'); b.disabled = true; b.textContent = 'Signing in...';
+  const { error } = await db.auth.signInWithPassword({ email: $('#em').value.trim(), password: $('#pw').value });
+  b.disabled = false; b.textContent = 'Sign in';
+  if (error) return showLogin('Sign-in failed. Check your email and password.');
+  await enter();
+});
+$('#logout').addEventListener('click', async () => { await db.auth.signOut(); me = null; showLogin(); });
+
+/* ---------- Views ---------- */
+function go(v){ view = v; render(); window.scrollTo(0, 0); }
+async function render(){
+  const el = $('#view');
+  el.innerHTML = '<div class="empty">Loading...</div>';
+  try {
+    if (view.t === 'wh') await renderWarehouses(el);
+    else if (view.t === 'shelves') await renderShelves(el);
+    else await renderShelf(el);
+  } catch (err) {
+    el.innerHTML = '<div class="empty">Could not load data. Check your connection and try again.</div>';
+  }
+}
+
+async function renderWarehouses(el){
+  const { data, error } = await db.from('warehouses').select('*').order('name');
+  if (error) throw error;
+  const rows = (data || []).filter(w => isAdmin() || w.is_active);
+  el.innerHTML = `<div class="crumb"><h2>Warehouses</h2>${isAdmin() ? '<button class="btn" id="addWh">Add warehouse</button>' : ''}</div>
+    <div class="list">${rows.length ? rows.map(w => `<button class="item ${w.is_active ? '' : 'off'}" data-id="${w.id}" data-name="${esc(w.name)}">
+      <span class="grow"><b>${esc(w.name)}</b><span class="sub">Tap to view shelves</span></span>${w.is_active ? '' : '<span class="tag">Inactive</span>'}</button>`).join('')
+      : '<div class="empty">No warehouses yet. Add the first warehouse to get started.</div>'}</div>`;
+  el.querySelectorAll('.item').forEach(b => b.onclick = () => go({ t: 'shelves', wh: { id: b.dataset.id, name: b.dataset.name } }));
+  const add = $('#addWh');
+  if (add) add.onclick = async () => {
+    const name = await askName('New warehouse name'); if (!name) return;
+    const { error } = await db.from('warehouses').insert({ name });
+    if (error) toast(error.code === '23505' ? 'A warehouse with this name already exists.' : 'Could not add the warehouse.');
+    else { toast('Warehouse added.'); render(); }
+  };
+}
+
+async function renderShelves(el){
+  const wh = view.wh;
+  const { data, error } = await db.from('shelves').select('*').eq('warehouse_id', wh.id).order('name');
+  if (error) throw error;
+  const rows = (data || []).filter(s => isAdmin() || s.is_active);
+  el.innerHTML = `<button class="back" id="bk">&larr; Warehouses</button>
+    <div class="crumb"><h2>${esc(wh.name)}</h2>${isAdmin() ? '<button class="btn" id="addSh">Add shelf</button>' : ''}</div>
+    <div class="list">${rows.length ? rows.map(s => `<div class="item ${s.is_active ? '' : 'off'}" style="cursor:default">
+      <button class="grow back" style="text-align:left;color:inherit" data-id="${s.id}" data-name="${esc(s.name)}"><b>Shelf ${esc(s.name)}</b><span class="sub">View stock on this shelf</span></button>
+      ${s.is_active ? '' : '<span class="tag">Inactive</span>'}
+      ${isAdmin() ? `<button class="btn ghost" data-tg="${s.id}" data-on="${s.is_active}" style="color:var(--pri)">${s.is_active ? 'Deactivate' : 'Activate'}</button>` : ''}</div>`).join('')
+      : '<div class="empty">No shelves in this warehouse yet.' + (isAdmin() ? ' Add the first shelf.' : '') + '</div>'}</div>`;
+  $('#bk').onclick = () => go({ t: 'wh' });
+  el.querySelectorAll('button[data-name]').forEach(b => b.onclick = () => go({ t: 'shelf', wh, shelf: { id: b.dataset.id, name: b.dataset.name } }));
+  el.querySelectorAll('button[data-tg]').forEach(b => b.onclick = async () => {
+    const { error } = await db.from('shelves').update({ is_active: b.dataset.on !== 'true' }).eq('id', b.dataset.tg);
+    if (error) toast('Could not update the shelf.'); else render();
+  });
+  const add = $('#addSh');
+  if (add) add.onclick = async () => {
+    const name = await askName('New shelf name'); if (!name) return;
+    const { error } = await db.from('shelves').insert({ warehouse_id: wh.id, name });
+    if (error) toast(error.code === '23505' ? 'This shelf already exists in the warehouse.' : 'Could not add the shelf.');
+    else { toast('Shelf added.'); render(); }
+  };
+}
+
+async function renderShelf(el){
+  const { wh, shelf } = view;
+  const { data, error } = await db.from('stock').select('qty_pcs, products(code,name,pcs_per_carton)').eq('shelf_id', shelf.id);
+  if (error) throw error;
+  const rows = (data || []).filter(r => r.qty_pcs > 0 && r.products).sort((a, b) => a.products.name.localeCompare(b.products.name));
+  el.innerHTML = `<button class="back" id="bk">&larr; ${esc(wh.name)}</button>
+    <div class="crumb"><h2>Shelf ${esc(shelf.name)}</h2></div>
+    ${rows.length ? `<div class="scroll"><table><thead><tr><th>Code</th><th>Product</th><th class="n">Cartons</th><th class="n">Pcs</th><th class="n">Total pcs</th></tr></thead><tbody>
+    ${rows.map(r => { const per = r.products.pcs_per_carton || 1; return `<tr><td>${esc(r.products.code)}</td><td>${esc(r.products.name)}</td><td class="n">${Math.floor(r.qty_pcs / per)}</td><td class="n">${r.qty_pcs % per}</td><td class="n">${r.qty_pcs}</td></tr>`; }).join('')}
+    </tbody></table></div>` : '<div class="empty">No stock on this shelf yet.</div>'}`;
+  $('#bk').onclick = () => go({ t: 'shelves', wh });
+}
+
+boot();
+</script>
+</body>
+</html>
