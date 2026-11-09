@@ -75,6 +75,9 @@ dialog{max-height:90vh;overflow:auto}
 textarea{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:#fbfdfb;font:inherit;resize:vertical}
 .badge{font-size:12px;font-weight:700;border-radius:6px;padding:2px 8px;color:#fff;white-space:nowrap}
 .b-in{background:#1e7a3c}.b-out{background:#b3261e}.b-count{background:#1fa3c8}.b-opening{background:#4f5d54}
+.ci{width:74px!important;padding:8px!important}
+.b-ok{background:#1e7a3c}.b-bad{background:#b3261e}.b-none{background:#8a968e}
+.cbar{position:sticky;bottom:0;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin-top:14px;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
 </style>
 </head>
 <body>
@@ -139,6 +142,10 @@ textarea{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius
     <input type="search" id="eQ" placeholder="Search by name or code" autocomplete="off">
     <select id="eProd" size="5" style="margin-top:6px" aria-label="Select product"></select>
     <div class="hint" id="eBal"></div>
+    <div id="eDest" class="hidden">
+      <label for="eDW">Destination warehouse</label><select id="eDW"></select>
+      <label for="eDS">Destination shelf</label><select id="eDS"></select>
+    </div>
     <div class="two">
       <div><label for="eCtn">Cartons</label><input type="number" id="eCtn" min="0" step="1" value="0"></div>
       <div><label for="ePcs">Loose pcs</label><input type="number" id="ePcs" min="0" step="1" value="0"></div>
@@ -220,6 +227,7 @@ async function render(){
     if (view.t === 'wh') await renderWarehouses(el);
     else if (view.t === 'prod') await renderProducts(el);
     else if (view.t === 'shelves') await renderShelves(el);
+    else if (view.t === 'count') await renderCount(el);
     else await renderShelf(el);
   } catch (err) {
     el.innerHTML = '<div class="empty">Could not load data. Check your connection and try again.</div>';
@@ -276,12 +284,13 @@ async function renderShelves(el){
   };
 }
 
-const TYPE_LABEL = { opening: 'Opening balance', in: 'Stock in', out: 'Stock out', count: 'Physical count' };
+const TYPE_LABEL = { opening: 'Opening balance', in: 'Stock in', out: 'Stock out', count: 'Physical count', transfer: 'Transfer out' };
 const TYPE_HINT = { opening: 'Sets the starting balance. The shelf balance becomes the quantity you enter.',
   in: 'Adds the quantity to the shelf balance.', out: 'Removes the quantity from the shelf balance.',
+  transfer: 'Removes the quantity from this shelf and adds it to the destination shelf.',
   count: 'Physical count. The shelf balance becomes the counted quantity.' };
 
-function entryDialog(type, shelf, products, stockMap){
+function entryDialog(type, shelf, products, stockMap, dests){
   return new Promise(res => {
     const d = $('#edlg'), q = $('#eQ'), sel = $('#eProd'), ctn = $('#eCtn'), pcs = $('#ePcs'), err = $('#eErr'), save = $('#eSave');
     $('#eTitle').textContent = TYPE_LABEL[type] + ' - Shelf ' + shelf.name;
@@ -292,7 +301,7 @@ function entryDialog(type, shelf, products, stockMap){
       if (!p) { $('#eBal').textContent = 'Select a product.'; $('#eTot').textContent = ''; return; }
       const per = p.pcs_per_carton || 1, tot = (parseInt(ctn.value, 10) || 0) * per + (parseInt(pcs.value, 10) || 0);
       $('#eBal').textContent = 'Current balance on this shelf: ' + bal + ' pcs (' + Math.floor(bal / per) + ' cartons + ' + (bal % per) + ' pcs). ' + per + ' pcs per carton.';
-      const after = type === 'in' ? bal + tot : type === 'out' ? bal - tot : tot;
+      const after = type === 'in' ? bal + tot : (type === 'out' || type === 'transfer') ? bal - tot : tot;
       $('#eTot').textContent = TYPE_HINT[type] + ' Entry: ' + tot + ' pcs. New balance: ' + after + ' pcs.';
     };
     const fill = () => {
@@ -302,6 +311,15 @@ function entryDialog(type, shelf, products, stockMap){
       if (rows.some(p => p.id === keep)) sel.value = keep; else if (rows.length) sel.value = rows[0].id;
       calc();
     };
+    const dw = $('#eDW'), ds = $('#eDS');
+    $('#eDest').classList.toggle('hidden', type !== 'transfer');
+    if (type === 'transfer') {
+      dw.innerHTML = dests.whs.map(w => `<option value="${w.id}">${esc(w.name)}</option>`).join('');
+      const fillS = () => { ds.innerHTML = dests.shelves.filter(x => x.warehouse_id === dw.value).map(x => `<option value="${x.id}">Shelf ${esc(x.name)}</option>`).join(''); };
+      dw.onchange = fillS;
+      if (dests.whs.some(w => w.id === view.wh.id)) dw.value = view.wh.id;
+      fillS();
+    }
     q.oninput = fill; sel.onchange = calc; ctn.oninput = calc; pcs.oninput = calc;
     $('#eCancel').onclick = () => d.close();
     $('#eForm').onsubmit = async e => {
@@ -310,15 +328,93 @@ function entryDialog(type, shelf, products, stockMap){
       const c = parseInt(ctn.value, 10) || 0, n = parseInt(pcs.value, 10) || 0;
       if (c < 0 || n < 0) { err.textContent = 'Quantity cannot be negative.'; return; }
       if (type !== 'count' && type !== 'opening' && c === 0 && n === 0) { err.textContent = 'Enter a quantity greater than zero.'; return; }
+      const note = $('#eNote').value.trim() || null;
+      if (type === 'transfer' && !ds.value) { err.textContent = 'Select a destination shelf.'; return; }
       save.disabled = true; save.textContent = 'Saving...';
-      const { error } = await db.rpc('add_bin_entry', { p_shelf: shelf.id, p_product: p.id, p_type: type, p_cartons: c, p_pcs: n, p_note: $('#eNote').value.trim() || null });
-      save.disabled = false; save.textContent = 'Save entry';
+      const { error } = type === 'transfer'
+        ? await db.rpc('transfer_stock', { p_from_shelf: shelf.id, p_to_shelf: ds.value, p_product: p.id, p_cartons: c, p_pcs: n, p_note: note })
+        : await db.rpc('add_bin_entry', { p_shelf: shelf.id, p_product: p.id, p_type: type, p_cartons: c, p_pcs: n, p_note: note });
+      save.disabled = false; save.textContent = type === 'transfer' ? 'Transfer' : 'Save entry';
       if (error) { err.textContent = error.message || 'Could not save the entry.'; return; }
       d.close('ok');
     };
     d.onclose = () => res(d.returnValue === 'ok');
     d.returnValue = ''; fill(); d.showModal();
   });
+}
+
+function typeLbl(x){
+  const n = x.note || '';
+  if (x.entry_type === 'out' && n.startsWith('Transfer to')) return 'Transfer out';
+  if (x.entry_type === 'in' && n.startsWith('Transfer from')) return 'Transfer in';
+  return TYPE_LABEL[x.entry_type] || x.entry_type;
+}
+
+async function renderCount(el){
+  const { wh, shelf } = view;
+  const [st, pr] = await Promise.all([
+    db.from('stock').select('product_id, qty_pcs').eq('shelf_id', shelf.id),
+    db.from('products').select('id,code,name,pcs_per_carton,is_active').order('name')
+  ]);
+  if (st.error) throw st.error; if (pr.error) throw pr.error;
+  const prods = pr.data || [], byId = Object.fromEntries(prods.map(p => [p.id, p]));
+  const sys = {}; (st.data || []).forEach(r => sys[r.product_id] = r.qty_pcs);
+  const ids = prods.filter(p => (sys[p.id] || 0) > 0).map(p => p.id);
+  const vals = {};
+  const per = id => byId[id].pcs_per_carton || 1;
+  const res = id => {
+    const v = vals[id]; if (!v || (v.c === '' && v.n === '')) return { k: 'none' };
+    const t = (parseInt(v.c, 10) || 0) * per(id) + (parseInt(v.n, 10) || 0), s = sys[id] || 0;
+    return t === s ? { k: 'ok', t, s } : { k: 'bad', t, s, d: t - s };
+  };
+  const badge = r => r.k === 'ok' ? '<span class="badge b-ok">Match</span>'
+    : r.k === 'bad' ? `<span class="badge b-bad">Mismatch (${r.d > 0 ? '+' : ''}${r.d})</span>` : '<span class="badge b-none">Not counted</span>';
+  const upd = () => {
+    let ok = 0, bad = 0, none = 0;
+    ids.forEach(id => {
+      const r = res(id); if (r.k === 'ok') ok++; else if (r.k === 'bad') bad++; else none++;
+      const row = el.querySelector(`tr[data-id="${id}"]`);
+      row.querySelector('.ct').textContent = r.k === 'none' ? '-' : r.t;
+      row.querySelector('.rs').innerHTML = badge(r);
+    });
+    $('#csum').innerHTML = `<b style="color:var(--pri)">Match: ${ok}</b> &middot; <b style="color:var(--err)">Mismatch: ${bad}</b> &middot; Not counted: ${none}`;
+  };
+  const draw = () => {
+    const extra = prods.filter(p => p.is_active && !ids.includes(p.id));
+    el.innerHTML = `<button class="back" id="bk">&larr; Shelf ${esc(shelf.name)}</button>
+      <div class="crumb"><h2>Physical count - Shelf ${esc(shelf.name)}</h2></div>
+      <div class="hint" style="margin:0 0 12px">Enter the counted quantity for each product. Leave a row empty to skip it. Counted pcs are compared with the system balance.</div>
+      ${ids.length ? `<div class="scroll"><table><thead><tr><th>Code</th><th>Product</th><th class="n">System (pcs)</th><th>Cartons</th><th>Loose pcs</th><th class="n">Counted</th><th>Result</th></tr></thead><tbody>
+      ${ids.map(id => { const p = byId[id], v = vals[id] || { c: '', n: '' }; return `<tr data-id="${id}"><td>${esc(p.code)}</td><td>${esc(p.name)}</td><td class="n">${sys[id] || 0}</td>
+        <td><input class="ci" type="number" min="0" step="1" data-f="c" value="${esc(v.c)}" aria-label="Counted cartons"></td>
+        <td><input class="ci" type="number" min="0" step="1" data-f="n" value="${esc(v.n)}" aria-label="Counted loose pcs"></td>
+        <td class="n ct">-</td><td class="rs"></td></tr>`; }).join('')}</tbody></table></div>` : '<div class="empty">No stock recorded on this shelf. Add a product below if you found stock.</div>'}
+      <div class="row" style="margin-top:12px"><select id="xp" aria-label="Add a product not in the system balance"><option value="">Add a product not on the system list...</option>${extra.map(p => `<option value="${p.id}">${esc(p.code)} - ${esc(p.name)}</option>`).join('')}</select><button class="btn light" id="xa">Add</button></div>
+      <div class="cbar"><span id="csum"></span><button class="btn" id="csave">Save count</button></div>`;
+    $('#bk').onclick = () => go({ t: 'shelf', wh, shelf });
+    el.querySelectorAll('input.ci').forEach(i => i.oninput = () => { const id = i.closest('tr').dataset.id; (vals[id] ??= { c: '', n: '' })[i.dataset.f] = i.value; upd(); });
+    $('#xa').onclick = () => { const id = $('#xp').value; if (!id) return; ids.push(id); draw(); };
+    $('#csave').onclick = save;
+    upd();
+  };
+  const save = async () => {
+    const items = ids.map(id => ({ id, r: res(id) })).filter(x => x.r.k !== 'none');
+    if (!items.length) return toast('Enter the counted quantity for at least one product.');
+    const bad = items.filter(x => x.r.k === 'bad').length;
+    if (bad && !confirm(bad + ' product(s) do not match the system balance. Saving will set the shelf balance to the counted quantity for those products. Continue?')) return;
+    const btn = $('#csave'); btn.disabled = true; btn.textContent = 'Saving...';
+    let done = 0;
+    for (const x of items) {
+      const v = vals[x.id];
+      const note = x.r.k === 'ok' ? 'Physical count: Match' : `Physical count: Mismatch (system ${x.r.s}, counted ${x.r.t}, difference ${x.r.d > 0 ? '+' : ''}${x.r.d})`;
+      const { error } = await db.rpc('add_bin_entry', { p_shelf: shelf.id, p_product: x.id, p_type: 'count', p_cartons: parseInt(v.c, 10) || 0, p_pcs: parseInt(v.n, 10) || 0, p_note: note });
+      if (error) { btn.disabled = false; btn.textContent = 'Save count'; return toast((done ? done + ' saved. ' : '') + (error.message || 'Could not save the count.')); }
+      done++;
+    }
+    toast(`Count saved: ${items.length - bad} matched, ${bad} mismatched.`);
+    go({ t: 'shelf', wh, shelf });
+  };
+  draw();
 }
 
 async function renderShelf(el){
@@ -339,7 +435,7 @@ async function renderShelf(el){
     <div class="crumb"><h2>Shelf ${esc(shelf.name)}</h2></div>
     <div class="acts">
       <button class="btn in" data-ty="in">Stock in</button>
-      <button class="btn out" data-ty="out">Stock out</button>
+      <button class="btn out" data-ty="transfer">Transfer out</button>
       ${isAdmin() ? '<button class="btn cnt" data-ty="count">Physical count</button><button class="btn opn" data-ty="opening">Opening balance</button>' : ''}
     </div>
     <h3 class="cat">Current stock</h3>
@@ -347,12 +443,25 @@ async function renderShelf(el){
     ${rows.map(r => { const per = r.products.pcs_per_carton || 1; return `<tr><td>${esc(r.products.code)}</td><td>${esc(r.products.name)}</td><td class="n">${Math.floor(r.qty_pcs / per)}</td><td class="n">${r.qty_pcs % per}</td><td class="n">${r.qty_pcs}</td></tr>`; }).join('')}
     </tbody></table></div>` : '<div class="empty">No stock on this shelf yet.</div>'}
     ${h ? `<h3 class="cat">Bin card history (latest 40)</h3>${h.length ? `<div class="scroll"><table><thead><tr><th>Date</th><th>Type</th><th>Product</th><th class="n">Qty (pcs)</th><th class="n">Balance</th><th>Note</th></tr></thead><tbody>
-    ${h.map(x => `<tr><td>${esc(fmt(x.created_at))}</td><td><span class="badge b-${esc(x.entry_type)}">${esc(TYPE_LABEL[x.entry_type] || x.entry_type)}</span></td><td>${esc(x.products ? x.products.code + ' - ' + x.products.name : '')}</td><td class="n">${x.total_pcs}</td><td class="n">${x.balance_before} &rarr; ${x.balance_after}</td><td>${esc(x.note || '')}</td></tr>`).join('')}
+    ${h.map(x => `<tr><td>${esc(fmt(x.created_at))}</td><td><span class="badge b-${esc(x.entry_type)}">${esc(typeLbl(x))}</span></td><td>${esc(x.products ? x.products.code + ' - ' + x.products.name : '')}</td><td class="n">${x.total_pcs}</td><td class="n">${x.balance_before} &rarr; ${x.balance_after}</td><td>${esc(x.note || '')}</td></tr>`).join('')}
     </tbody></table></div>` : '<div class="empty">No entries yet.</div>'}` : ''}`;
   $('#bk').onclick = () => go({ t: 'shelves', wh });
   el.querySelectorAll('[data-ty]').forEach(b => b.onclick = async () => {
-    if (!products.length) return toast('No active products available.');
-    if (await entryDialog(b.dataset.ty, shelf, products, stockMap)) { toast('Entry saved.'); render(); }
+    const ty = b.dataset.ty;
+    if (ty === 'count') return go({ t: 'count', wh, shelf });
+    let list = products, dests = null;
+    if (ty === 'transfer') {
+      list = products.filter(p => (stockMap[p.id] || 0) > 0);
+      if (!list.length) return toast('There is no stock on this shelf to transfer.');
+      const [w, sh] = await Promise.all([db.from('warehouses').select('id,name,is_active').order('name'), db.from('shelves').select('id,name,warehouse_id,is_active').order('name')]);
+      if (w.error || sh.error) return toast('Could not load destinations.');
+      const shelves = (sh.data || []).filter(x => x.is_active && x.id !== shelf.id);
+      const whs = (w.data || []).filter(x => x.is_active && shelves.some(y => y.warehouse_id === x.id));
+      if (!whs.length) return toast('No destination shelf available.');
+      dests = { whs, shelves };
+    }
+    if (!list.length) return toast('No active products available.');
+    if (await entryDialog(ty, shelf, list, stockMap, dests)) { toast(ty === 'transfer' ? 'Transfer completed.' : 'Entry saved.'); render(); }
   });
 }
 
