@@ -96,6 +96,13 @@ table.bc small{display:block;color:var(--mut);font-size:11px}
   table.bc{font-size:10px}table.bc th,table.bc td{padding:4px 5px;border:1px solid #444}
   .papersign{display:flex}.paperhead{border:1px solid #444;border-radius:0}
 }
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:10px 0 14px}
+.kpi{background:var(--card);border:1px solid var(--line);border-top:4px solid var(--acc);border-radius:12px;padding:10px 14px}
+.kpi span{display:block;font-size:12px;color:var(--mut)}.kpi b{display:block;font-size:22px;line-height:1.25}.kpi small{display:block;font-size:12px;color:var(--mut)}
+.kpi.bad{border-top-color:var(--err)}.kpi.good{border-top-color:var(--pri)}
+td.stick,th.stick{position:sticky;left:0;background:#fff;z-index:1}
+details.sup{background:var(--card);border:1px solid var(--line);border-radius:12px;margin-bottom:8px;padding:10px 14px}
+details.sup summary{cursor:pointer;font-weight:600}
 </style>
 </head>
 <body>
@@ -121,7 +128,7 @@ table.bc small{display:block;color:var(--mut);font-size:11px}
     <span class="role" id="roleTag"></span>
     <button class="btn ghost" id="logout">Sign out</button>
   </div></header>
-  <nav class="tabs"><button data-tab="wh" class="on">Warehouses</button><button data-tab="prod">Products</button><button data-tab="loc">Locations</button><button data-tab="users" id="tabUsers" class="hidden">Users</button></nav>
+  <nav class="tabs"><button data-tab="wh" class="on">Warehouses</button><button data-tab="prod">Products</button><button data-tab="loc">Locations</button><button data-tab="reports" id="tabReports" class="hidden">Reports</button><button data-tab="users" id="tabUsers" class="hidden">Users</button></nav>
   <main class="wrap" id="view"></main>
 </section>
 
@@ -246,6 +253,7 @@ async function enter(){
   $('#whoSub').textContent = me.full_name || me.email || '';
   $('#roleTag').textContent = me.role;
   $('#tabUsers').classList.toggle('hidden', !isAdmin());
+  $('#tabReports').classList.toggle('hidden', !isAdmin());
   $('#login').classList.add('hidden'); $('#app').classList.remove('hidden');
   view = { t: 'wh' }; render();
 }
@@ -260,7 +268,7 @@ $('#loginForm').addEventListener('submit', async e => {
 $('#logout').addEventListener('click', async () => { await db.auth.signOut(); me = null; showLogin(); });
 
 /* ---------- Views ---------- */
-function go(v){ view = v; document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === (v.t === 'prod' ? 'prod' : (v.t === 'loc' || v.t === 'locdetail') ? 'loc' : v.t === 'users' ? 'users' : 'wh'))); render(); window.scrollTo(0, 0); }
+function go(v){ view = v; document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === (v.t === 'prod' ? 'prod' : (v.t === 'loc' || v.t === 'locdetail') ? 'loc' : v.t === 'users' ? 'users' : (v.t === 'reports' || v.t === 'rep') ? 'reports' : 'wh'))); render(); window.scrollTo(0, 0); }
 async function render(){
   const el = $('#view');
   el.style.maxWidth = view.t === 'bincard' ? '1400px' : '';
@@ -270,6 +278,8 @@ async function render(){
     else if (view.t === 'prod') await renderProducts(el);
     else if (view.t === 'loc') await renderLocations(el);
     else if (view.t === 'users') await renderUsers(el);
+    else if (view.t === 'reports') await renderReports(el);
+    else if (view.t === 'rep') await renderRep(el);
     else if (view.t === 'locdetail') await renderLocationDetail(el);
     else if (view.t === 'shelves') await renderShelves(el);
     else if (view.t === 'count') await renderCount(el);
@@ -756,6 +766,273 @@ async function renderUsers(el){
     try { await callUsers({ action: 'update', id: x.id, is_active: on }); toast(on ? 'User activated.' : 'User deactivated.'); render(); }
     catch (e) { toast(e.message); }
   });
+}
+
+/* ---------- Reports (master / admin) ---------- */
+const repRange = { from: ymd(new Date(new Date().getFullYear(), new Date().getMonth(), 1)), to: ymd(new Date()) };
+const REPORTS = [
+  { k: 'ledger', t: 'Stock ledger', d: 'Opening, received, issued and closing stock for any period' },
+  { k: 'location', t: 'Location analysis', d: 'Location x product matrix and month-to-month comparison' },
+  { k: 'count', t: 'Physical count variance', d: 'Mismatches, shortage and excess value, and results by employee' },
+  { k: 'supplier', t: 'Supplier-wise stock in', d: 'Quantity, value and number of receipts per supplier' },
+  { k: 'issue', t: 'Issue no search', d: 'Find every entry that carries an issue no' },
+  { k: 'activity', t: 'User activity', d: 'Entries per user and per day' },
+  { k: 'audit', t: 'Audit pending', d: 'Entries that are not audited yet, by shelf' },
+  { k: 'movement', t: 'Fast and dead stock', d: 'Top moving products and stock that has not moved' }
+];
+const nz = v => Number(v || 0);
+const money = v => '&#2547; ' + n0(v);
+const tblHead = cols => '<thead><tr>' + cols.map(c => c[0] === '>' ? `<th class="n">${esc(c.slice(1))}</th>` : `<th>${esc(c)}</th>`).join('') + '</tr></thead>';
+const kpi = (label, big, sub = '', cls = '') => `<div class="kpi ${cls}"><span>${esc(label)}</span><b>${big}</b>${sub ? `<small>${sub}</small>` : ''}</div>`;
+const monthLbl = k => new Date(k + '-01T00:00:00').toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
+async function rpcAll(name, args){
+  let all = [], from = 0;
+  for (let i = 0; i < 30; i++) {
+    const { data, error } = await db.rpc(name, args).range(from, from + 999);
+    if (error) throw error;
+    all = all.concat(data || []);
+    if (!data || data.length < 1000) break;
+    from += 1000;
+  }
+  return all;
+}
+function saveCsv(name, head, rows){
+  if (!rows.length) return toast('Nothing to download.');
+  const q = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+  const blob = new Blob(['\ufeff' + [head.map(q).join(',')].concat(rows.map(r => r.map(q).join(','))).join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = name + '_' + repRange.from + '_to_' + repRange.to + '.csv'; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+const repHead = (title, o = {}) => `<button class="back" id="bk">&larr; Reports</button>
+  <div class="crumb"><h2>${esc(title)}</h2><span class="noprint" style="display:flex;gap:8px"><button class="btn light" id="prn">Print</button>${o.csv === false ? '' : '<button class="btn light" id="csv">Download CSV</button>'}</span></div>
+  <div class="noprint">${o.range === false ? '' : `<div class="row"><div style="flex:1"><label for="rpf">From</label><input type="date" id="rpf" value="${repRange.from}"></div><div style="flex:1"><label for="rpt">To</label><input type="date" id="rpt" value="${repRange.to}"></div></div>`}${o.extra || ''}</div>`;
+function repBind(csvFn){
+  $('#bk').onclick = () => go({ t: 'reports' });
+  $('#prn').onclick = () => window.print();
+  const c = $('#csv'); if (c) c.onclick = csvFn;
+  const f = $('#rpf'), t = $('#rpt');
+  if (f) f.onchange = e => { if (e.target.value) { repRange.from = e.target.value; render(); } };
+  if (t) t.onchange = e => { if (e.target.value) { repRange.to = e.target.value; render(); } };
+}
+const sel = (id, label, opts, cur) => `<div style="flex:1"><label for="${id}">${label}</label><select id="${id}">${opts.map(o => `<option value="${esc(o[0])}" ${String(o[0]) === String(cur) ? 'selected' : ''}>${esc(o[1])}</option>`).join('')}</select></div>`;
+
+async function renderReports(el){
+  if (!isAdmin()) { el.innerHTML = '<div class="empty">You do not have access to this page.</div>'; return; }
+  const [d, inv] = await Promise.all([db.rpc('report_dashboard'), db.rpc('inventory_summary')]);
+  if (d.error) throw d.error;
+  const x = d.data || {}, w = inv.data || [];
+  const totPcs = w.reduce((a, r) => a + nz(r.total_pcs), 0), totVal = w.reduce((a, r) => a + nz(r.total_value), 0);
+  el.innerHTML = `<div class="crumb"><h2>Dashboard</h2><span class="hint" style="margin:0">Today, ${esc(fmtD(x.date + 'T12:00:00+06:00'))}</span></div>
+    <div class="kpis">
+      ${kpi('Stock in today', n0(x.receipts_pcs) + ' pcs', n0(x.receipts_entries) + ' entries &middot; ' + money(x.receipts_value), 'good')}
+      ${kpi('Issued to locations today', n0(x.issues_pcs) + ' pcs', n0(x.issues_entries) + ' entries &middot; ' + money(x.issues_value))}
+      ${kpi('Count mismatches today', n0(x.counts_mismatch), 'of ' + n0(x.counts_total) + ' counts', nz(x.counts_mismatch) ? 'bad' : 'good')}
+      ${kpi('Audit pending', n0(x.unaudited), 'entries not audited', nz(x.unaudited) ? 'bad' : 'good')}
+    </div>
+    <h3 class="cat">Inventory by warehouse</h3>
+    <div class="sum">${w.map(r => `<div class="sumc"><b>${esc(r.warehouse_name)}</b><span>${n0(r.total_pcs)} pcs &middot; ${money(r.total_value)}</span></div>`).join('') || '<div class="empty">No warehouses yet.</div>'}
+      ${w.length ? `<div class="sumc" style="border-left-color:var(--pri)"><b>Total</b><span>${n0(totPcs)} pcs &middot; ${money(totVal)}</span></div>` : ''}</div>
+    <h3 class="cat">Reports</h3>
+    <div class="list">${REPORTS.map(r => `<div class="item" data-rep="${r.k}"><span class="grow"><b>${esc(r.t)}</b><span class="sub">${esc(r.d)}</span></span><span>&rsaquo;</span></div>`).join('')}</div>`;
+  el.querySelectorAll('[data-rep]').forEach(b => b.onclick = () => go({ t: 'rep', rep: b.dataset.rep }));
+}
+
+async function renderRep(el){
+  if (!isAdmin()) { el.innerHTML = '<div class="empty">You do not have access to this page.</div>'; return; }
+  const fn = { ledger: repLedger, location: repLocation, count: repCount, supplier: repSupplier, issue: repIssue, activity: repActivity, audit: repAudit, movement: repMovement }[view.rep];
+  if (!fn) return go({ t: 'reports' });
+  await fn(el);
+}
+
+/* --- Stock ledger --- */
+let ledMode = 'product', ledWh = '', ledQ = '';
+async function repLedger(el){
+  const [wl, rows] = await Promise.all([db.from('warehouses').select('id,name').order('name'),
+    rpcAll('report_stock_ledger', { p_from: repRange.from, p_to: repRange.to, p_warehouse: ledWh || null })]);
+  if (wl.error) throw wl.error;
+  const q = ledQ.trim().toLowerCase();
+  const list = rows.filter(r => !q || r.product_code.toLowerCase().includes(q) || r.product_name.toLowerCase().includes(q));
+  const g = new Map();
+  list.forEach(r => {
+    const shelf = r.warehouse_name + ' / Shelf ' + r.shelf_name, prod = r.product_code + ' - ' + r.product_name;
+    const k = ledMode === 'product' ? r.product_code : ledMode === 'shelf' ? shelf : r.product_code + '|' + shelf;
+    let o = g.get(k); if (!o) { o = { a: ledMode === 'shelf' ? shelf : prod, b: shelf, op: 0, rec: 0, iss: 0, mi: 0, mo: 0, cl: 0, val: 0 }; g.set(k, o); }
+    o.op += nz(r.opening); o.rec += nz(r.received); o.iss += nz(r.issued); o.mi += nz(r.moved_in); o.mo += nz(r.moved_out); o.cl += nz(r.closing); o.val += nz(r.closing) * nz(r.mrp);
+  });
+  const out = [...g.values()].sort((a, b) => a.a.localeCompare(b.a) || a.b.localeCompare(b.b));
+  out.forEach(o => o.adj = o.cl - o.op - o.rec + o.iss - o.mi + o.mo);
+  const T = out.reduce((t, o) => { ['op', 'rec', 'iss', 'mi', 'mo', 'adj', 'cl', 'val'].forEach(k => t[k] += o[k]); return t; }, { op: 0, rec: 0, iss: 0, mi: 0, mo: 0, adj: 0, cl: 0, val: 0 });
+  const lead = ledMode === 'detail' ? ['Product', 'Shelf'] : [ledMode === 'shelf' ? 'Shelf' : 'Product'];
+  const extra = `<div class="row" style="margin-top:10px">${sel('lw', 'Warehouse', [['', 'All warehouses']].concat(wl.data.map(w => [w.id, w.name])), ledWh)}
+    ${sel('lm', 'View', [['product', 'Product wise'], ['shelf', 'Shelf wise'], ['detail', 'Product by shelf']], ledMode)}
+    <div style="flex:1"><label for="lq">Search product</label><input type="search" id="lq" value="${esc(ledQ)}" placeholder="Name or code"></div></div>`;
+  const cell = o => (ledMode === 'detail' ? `<td>${esc(o.a)}</td><td>${esc(o.b)}</td>` : `<td>${esc(o.a)}</td>`);
+  el.innerHTML = repHead('Stock ledger', { extra }) + `<div class="hint">All quantities are in pcs. Received = stock in from suppliers. Issued = stock out to locations. Shelf transfers between shelves are shown separately. Adjustment = physical count and opening balance changes.</div>
+    ${out.length ? `<div class="scroll"><table class="bc">${tblHead(lead.concat(['>Opening', '>Received', '>Issued', '>Shelf transfer in', '>Shelf transfer out', '>Adjustment', '>Closing', '>Closing value (BDT)']))}<tbody>
+    ${out.map(o => `<tr>${cell(o)}<td class="n">${n0(o.op)}</td><td class="n">${n0(o.rec)}</td><td class="n">${n0(o.iss)}</td><td class="n">${n0(o.mi)}</td><td class="n">${n0(o.mo)}</td><td class="n">${n0(o.adj)}</td><td class="n"><b>${n0(o.cl)}</b></td><td class="n">${n0(o.val)}</td></tr>`).join('')}
+    <tr><th colspan="${lead.length}">Total</th><th class="n">${n0(T.op)}</th><th class="n">${n0(T.rec)}</th><th class="n">${n0(T.iss)}</th><th class="n">${n0(T.mi)}</th><th class="n">${n0(T.mo)}</th><th class="n">${n0(T.adj)}</th><th class="n">${n0(T.cl)}</th><th class="n">${n0(T.val)}</th></tr></tbody></table></div>` : '<div class="empty">No stock movement found.</div>'}`;
+  repBind(() => saveCsv('Stock_ledger_' + ledMode, lead.concat(['Opening', 'Received', 'Issued', 'Shelf transfer in', 'Shelf transfer out', 'Adjustment', 'Closing', 'Closing value']),
+    out.map(o => (ledMode === 'detail' ? [o.a, o.b] : [o.a]).concat([o.op, o.rec, o.iss, o.mi, o.mo, o.adj, o.cl, Math.round(o.val)]))));
+  $('#lw').onchange = e => { ledWh = e.target.value; render(); };
+  $('#lm').onchange = e => { ledMode = e.target.value; render(); };
+  $('#lq').onchange = e => { ledQ = e.target.value; render(); };
+}
+
+/* --- Location analysis --- */
+let locMode = 'matrix', locMeasure = 'pcs', locMonths = '6';
+async function repLocation(el){
+  const modeSel = sel('lmode', 'View', [['matrix', 'Product x location'], ['month', 'Month by month']], locMode) + sel('lmeas', 'Show', [['pcs', 'Quantity (pcs)'], ['value', 'Value (BDT)']], locMeasure)
+    + (locMode === 'month' ? sel('lmon', 'Months', [['3', 'Last 3 months'], ['6', 'Last 6 months'], ['12', 'Last 12 months']], locMonths) : '');
+  const extra = `<div class="row" style="margin-top:10px">${modeSel}</div>`;
+  const pick = r => locMeasure === 'value' ? nz(r.total_value) : nz(r.total_pcs);
+  const bindSel = () => {
+    $('#lmode').onchange = e => { locMode = e.target.value; render(); };
+    $('#lmeas').onchange = e => { locMeasure = e.target.value; render(); };
+    const m = $('#lmon'); if (m) m.onchange = e => { locMonths = e.target.value; render(); };
+  };
+  if (locMode === 'matrix') {
+    const rows = await rpcAll('report_location_matrix', { p_from: repRange.from, p_to: repRange.to });
+    const locs = new Map(), prods = new Map(), cell = new Map();
+    rows.forEach(r => { const v = pick(r), pk = r.product_code + ' - ' + r.product_name;
+      locs.set(r.location_name, (locs.get(r.location_name) || 0) + v); prods.set(pk, (prods.get(pk) || 0) + v); cell.set(pk + '|' + r.location_name, v); });
+    const L = [...locs.entries()].sort((a, b) => b[1] - a[1]).map(x => x[0]), P = [...prods.entries()].sort((a, b) => b[1] - a[1]);
+    const total = P.reduce((a, x) => a + x[1], 0);
+    el.innerHTML = repHead('Location analysis', { extra }) + (P.length ? `<div class="hint">Products are sorted by total, locations by total (highest first).</div>
+      <div class="scroll"><table class="bc"><thead><tr><th class="stick">Product</th>${L.map(l => `<th class="n">${esc(l)}</th>`).join('')}<th class="n">Total</th></tr></thead><tbody>
+      ${P.map(([pk, tv]) => `<tr><td class="stick w">${esc(pk)}</td>${L.map(l => `<td class="n">${cell.has(pk + '|' + l) ? n0(cell.get(pk + '|' + l)) : ''}</td>`).join('')}<td class="n"><b>${n0(tv)}</b></td></tr>`).join('')}
+      <tr><th class="stick">Total</th>${L.map(l => `<th class="n">${n0(locs.get(l))}</th>`).join('')}<th class="n">${n0(total)}</th></tr></tbody></table></div>` : '<div class="empty">No transfers to locations in the selected dates.</div>');
+    repBind(() => saveCsv('Location_matrix_' + locMeasure, ['Product'].concat(L, ['Total']), P.map(([pk, tv]) => [pk].concat(L.map(l => cell.get(pk + '|' + l) ?? ''), [tv]))));
+  } else {
+    const rows = await rpcAll('report_location_monthly', { p_months: parseInt(locMonths, 10) });
+    const months = [...new Set(rows.map(r => r.month_key))].sort(), byLoc = new Map();
+    rows.forEach(r => { let o = byLoc.get(r.location_name); if (!o) { o = {}; byLoc.set(r.location_name, o); } o[r.month_key] = pick(r); });
+    const list = [...byLoc.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+    const chg = o => { const n = months.length; if (n < 2) return ''; const a = nz(o[months[n - 2]]), b = nz(o[months[n - 1]]); return a > 0 ? ((b - a) / a * 100).toFixed(0) + '%' : (b > 0 ? 'New' : ''); };
+    el.innerHTML = repHead('Location analysis', { extra, range: false }) + (list.length ? `<div class="hint">Change compares the latest month with the month before it.</div>
+      <div class="scroll"><table class="bc"><thead><tr><th class="stick">Location</th>${months.map(m => `<th class="n">${esc(monthLbl(m))}</th>`).join('')}<th class="n">Change</th></tr></thead><tbody>
+      ${list.map(([l, o]) => `<tr><td class="stick">${esc(l)}</td>${months.map(m => `<td class="n">${o[m] ? n0(o[m]) : ''}</td>`).join('')}<td class="n">${esc(chg(o))}</td></tr>`).join('')}
+      <tr><th class="stick">Total</th>${months.map(m => `<th class="n">${n0(list.reduce((a, [, o]) => a + nz(o[m]), 0))}</th>`).join('')}<th></th></tr></tbody></table></div>` : '<div class="empty">No transfers to locations in this period.</div>');
+    repBind(() => saveCsv('Location_monthly_' + locMeasure, ['Location'].concat(months, ['Change']), list.map(([l, o]) => [l].concat(months.map(m => o[m] ?? ''), [chg(o)]))));
+  }
+  bindSel();
+}
+
+/* --- Physical count variance --- */
+let cntOnly = '1';
+async function repCount(el){
+  const rows = await rpcAll('report_count_variance', { p_from: repRange.from, p_to: repRange.to });
+  const diff = r => nz(r.counted_pcs) - nz(r.system_pcs);
+  const bad = rows.filter(r => diff(r) !== 0), good = rows.length - bad.length;
+  let shortP = 0, shortV = 0, exP = 0, exV = 0;
+  bad.forEach(r => { const d = diff(r), v = d * nz(r.mrp); if (d < 0) { shortP += -d; shortV += -v; } else { exP += d; exV += v; } });
+  const by = new Map();
+  rows.forEach(r => { let o = by.get(r.counted_by); if (!o) { o = { n: 0, bad: 0, sp: 0, sv: 0, ep: 0, ev: 0 }; by.set(r.counted_by, o); }
+    o.n++; const d = diff(r); if (d !== 0) { o.bad++; if (d < 0) { o.sp += -d; o.sv += -d * nz(r.mrp); } else { o.ep += d; o.ev += d * nz(r.mrp); } } });
+  const people = [...by.entries()].sort((a, b) => b[1].bad - a[1].bad);
+  const shown = cntOnly === '1' ? bad : rows;
+  const extra = `<div class="row" style="margin-top:10px">${sel('cshow', 'List', [['1', 'Mismatches only'], ['0', 'All counts']], cntOnly)}</div>`;
+  el.innerHTML = repHead('Physical count variance', { extra }) + `<div class="kpis">
+    ${kpi('Counts', n0(rows.length))}${kpi('Match', n0(good), '', 'good')}${kpi('Mismatch', n0(bad.length), rows.length ? (bad.length / rows.length * 100).toFixed(1) + '% of counts' : '', bad.length ? 'bad' : 'good')}
+    ${kpi('Shortage', n0(shortP) + ' pcs', money(shortV), shortP ? 'bad' : '')}${kpi('Excess', n0(exP) + ' pcs', money(exV))}</div>
+    <h3 class="cat">Results by employee</h3>
+    ${people.length ? `<div class="scroll"><table class="bc">${tblHead(['Counted by', '>Counts', '>Mismatches', '>Mismatch rate', '>Shortage (pcs)', '>Shortage (BDT)', '>Excess (pcs)', '>Excess (BDT)'])}<tbody>
+    ${people.map(([n, o]) => `<tr><td>${esc(n)}</td><td class="n">${o.n}</td><td class="n">${o.bad}</td><td class="n">${(o.bad / o.n * 100).toFixed(0)}%</td><td class="n">${n0(o.sp)}</td><td class="n">${n0(o.sv)}</td><td class="n">${n0(o.ep)}</td><td class="n">${n0(o.ev)}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">No physical counts in the selected dates.</div>'}
+    <h3 class="cat">${cntOnly === '1' ? 'Mismatches' : 'All counts'}</h3>
+    ${shown.length ? `<div class="scroll"><table class="bc">${tblHead(['Date', 'Shelf', 'Product', '>System', '>Counted', '>Difference', '>Value (BDT)', 'Counted by'])}<tbody>
+    ${shown.map(r => { const d = diff(r); return `<tr><td>${esc(fmtD(r.count_time))} ${esc(fmtT(r.count_time))}</td><td class="w">${esc(r.warehouse_name)} / Shelf ${esc(r.shelf_name)}</td><td class="w">${esc(r.product_code)} - ${esc(r.product_name)}</td><td class="n">${n0(r.system_pcs)}</td><td class="n">${n0(r.counted_pcs)}</td><td class="n" style="color:${d < 0 ? 'var(--err)' : d > 0 ? 'var(--pri)' : 'inherit'}">${d > 0 ? '+' : ''}${n0(d)}</td><td class="n">${n0(d * nz(r.mrp))}</td><td>${esc(r.counted_by)}</td></tr>`; }).join('')}</tbody></table></div>` : '<div class="empty">Nothing to show.</div>'}`;
+  repBind(() => saveCsv('Count_variance', ['Date', 'Warehouse', 'Shelf', 'Product', 'System', 'Counted', 'Difference', 'Value', 'Counted by'],
+    shown.map(r => [fmtD(r.count_time) + ' ' + fmtT(r.count_time), r.warehouse_name, r.shelf_name, r.product_code + ' - ' + r.product_name, r.system_pcs, r.counted_pcs, diff(r), diff(r) * nz(r.mrp), r.counted_by])));
+  $('#cshow').onchange = e => { cntOnly = e.target.value; render(); };
+}
+
+/* --- Supplier-wise stock in --- */
+async function repSupplier(el){
+  const rows = await rpcAll('report_supplier_in', { p_from: repRange.from, p_to: repRange.to });
+  const by = new Map();
+  rows.forEach(r => { let o = by.get(r.supplier_name); if (!o) { o = { n: 0, pcs: 0, val: 0, last: r.last_in, items: [] }; by.set(r.supplier_name, o); }
+    o.n += nz(r.entries); o.pcs += nz(r.total_pcs); o.val += nz(r.total_value); if (r.last_in > o.last) o.last = r.last_in; o.items.push(r); });
+  const list = [...by.entries()].sort((a, b) => b[1].val - a[1].val);
+  const tp = list.reduce((a, [, o]) => a + o.pcs, 0), tv = list.reduce((a, [, o]) => a + o.val, 0);
+  el.innerHTML = repHead('Supplier-wise stock in') + `<div class="kpis">${kpi('Suppliers', n0(list.length))}${kpi('Total received', n0(tp) + ' pcs')}${kpi('Value (MRP)', money(tv))}</div>
+    <div class="hint">Value is calculated at the current MRP. Open a supplier to see its products.</div>
+    ${list.length ? list.map(([n, o]) => `<details class="sup"><summary>${esc(n)} &middot; ${o.n} entries &middot; ${n0(o.pcs)} pcs &middot; ${money(o.val)}</summary>
+      <div class="scroll" style="margin-top:8px"><table class="bc">${tblHead(['Product', '>Entries', '>Qty (pcs)', '>Value (BDT)', 'Last stock in'])}<tbody>
+      ${o.items.map(r => `<tr><td class="w">${esc(r.product_code)} - ${esc(r.product_name)}</td><td class="n">${r.entries}</td><td class="n">${n0(r.total_pcs)}</td><td class="n">${n0(r.total_value)}</td><td>${esc(fmtD(r.last_in))}</td></tr>`).join('')}</tbody></table></div></details>`).join('') : '<div class="empty">No stock in entries in the selected dates.</div>'}`;
+  repBind(() => saveCsv('Supplier_stock_in', ['Supplier', 'Product', 'Entries', 'Qty (pcs)', 'Value (MRP)', 'Last stock in'],
+    rows.map(r => [r.supplier_name, r.product_code + ' - ' + r.product_name, r.entries, r.total_pcs, Math.round(nz(r.total_value)), fmtD(r.last_in)])));
+}
+
+/* --- Issue no search --- */
+let issueQ = '';
+async function repIssue(el){
+  const extra = `<div class="row" style="margin-top:6px"><div style="flex:3"><label for="iq">Issue no</label><input type="search" id="iq" value="${esc(issueQ)}" placeholder="Type an issue no or part of it"></div><div style="flex:1;align-self:flex-end"><button class="btn" id="ig" style="width:100%">Search</button></div></div>`;
+  let rows = [];
+  if (issueQ.trim()) { const { data, error } = await db.rpc('report_issue_search', { p_issue: issueQ.trim() }); if (error) throw error; rows = data || []; }
+  const TL = { in: 'Stock in', out: 'Stock out', count: 'Physical count', opening: 'Opening balance' };
+  el.innerHTML = repHead('Issue no search', { range: false, extra }) + (!issueQ.trim() ? '<div class="empty">Enter an issue no to search.</div>' : rows.length ? `<div class="hint">${rows.length} entries found${rows.length >= 500 ? ' (showing the latest 500)' : ''}.</div>
+    <div class="scroll"><table class="bc">${tblHead(['Date', 'Type', 'Shelf', 'Product', '>Qty (pcs)', 'Supplier / location', 'Issue no', 'Entered by', 'Audited by'])}<tbody>
+    ${rows.map(r => `<tr><td>${esc(fmtD(r.entry_time))} ${esc(fmtT(r.entry_time))}</td><td>${esc(TL[r.entry_type] || r.entry_type)}</td><td class="w">${esc(r.warehouse_name)} / Shelf ${esc(r.shelf_name)}</td><td class="w">${esc(r.product_code)} - ${esc(r.product_name)}</td><td class="n">${n0(r.total_pcs)}</td><td class="w">${esc(partyOf({ party: r.party, note: r.note, entry_type: r.entry_type }))}</td><td>${esc(r.issue_no || '')}</td><td>${esc(r.concern_name || '')}</td><td>${esc(r.audit_name || '')}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">No entries found for this issue no.</div>');
+  repBind(() => saveCsv('Issue_' + issueQ.trim().replace(/[^\w]+/g, '_'), ['Date', 'Type', 'Warehouse', 'Shelf', 'Product', 'Qty (pcs)', 'Supplier/location', 'Issue no', 'Entered by', 'Audited by'],
+    rows.map(r => [fmtD(r.entry_time) + ' ' + fmtT(r.entry_time), TL[r.entry_type] || r.entry_type, r.warehouse_name, r.shelf_name, r.product_code + ' - ' + r.product_name, r.total_pcs, partyOf({ party: r.party, note: r.note, entry_type: r.entry_type }), r.issue_no || '', r.concern_name || '', r.audit_name || ''])));
+  const go1 = () => { issueQ = $('#iq').value; render(); };
+  $('#ig').onclick = go1; $('#iq').onkeydown = e => { if (e.key === 'Enter') go1(); };
+}
+
+/* --- User activity --- */
+async function repActivity(el){
+  const rows = await rpcAll('report_user_activity', { p_from: repRange.from, p_to: repRange.to });
+  const by = new Map();
+  rows.forEach(r => { let o = by.get(r.user_name); if (!o) { o = { days: 0, n: 0, si: 0, is: 0, c: 0, ua: 0, last: r.last_time }; by.set(r.user_name, o); }
+    o.days++; o.n += nz(r.entries); o.si += nz(r.stock_ins); o.is += nz(r.issues); o.c += nz(r.counts); o.ua += nz(r.unaudited); if (r.last_time > o.last) o.last = r.last_time; });
+  const people = [...by.entries()].sort((a, b) => b[1].n - a[1].n);
+  el.innerHTML = repHead('User activity') + `<h3 class="cat">By user</h3>
+    ${people.length ? `<div class="scroll"><table class="bc">${tblHead(['User', '>Active days', '>Entries', '>Stock in', '>Issues', '>Counts', '>Not audited', 'Last activity'])}<tbody>
+    ${people.map(([n, o]) => `<tr><td>${esc(n)}</td><td class="n">${o.days}</td><td class="n">${o.n}</td><td class="n">${o.si}</td><td class="n">${o.is}</td><td class="n">${o.c}</td><td class="n">${o.ua}</td><td>${esc(fmtD(o.last))} ${esc(fmtT(o.last))}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">No entries in the selected dates.</div>'}
+    ${rows.length ? `<h3 class="cat">By day</h3><div class="scroll"><table class="bc">${tblHead(['Date', 'User', '>Entries', '>Stock in', '>Issues', '>Counts', '>Not audited'])}<tbody>
+    ${rows.map(r => `<tr><td>${esc(fmtD(r.activity_day + 'T12:00:00+06:00'))}</td><td>${esc(r.user_name)}</td><td class="n">${r.entries}</td><td class="n">${r.stock_ins}</td><td class="n">${r.issues}</td><td class="n">${r.counts}</td><td class="n">${r.unaudited}</td></tr>`).join('')}</tbody></table></div>` : ''}`;
+  repBind(() => saveCsv('User_activity', ['Date', 'User', 'Entries', 'Stock in', 'Issues', 'Counts', 'Not audited'], rows.map(r => [r.activity_day, r.user_name, r.entries, r.stock_ins, r.issues, r.counts, r.unaudited])));
+}
+
+/* --- Audit pending --- */
+async function repAudit(el){
+  const rows = await rpcAll('report_unaudited', { p_from: repRange.from, p_to: repRange.to });
+  const by = new Map();
+  rows.forEach(r => { const k = r.shelf_id; let o = by.get(k); if (!o) { o = { wh: { id: r.warehouse_id, name: r.warehouse_name }, shelf: { id: r.shelf_id, name: r.shelf_name }, n: 0, first: r.entry_time }; by.set(k, o); } o.n++; });
+  const list = [...by.values()].sort((a, b) => b.n - a.n);
+  const TL = { in: 'Stock in', out: 'Stock out', count: 'Physical count', opening: 'Opening balance' };
+  el.innerHTML = repHead('Audit pending') + `<div class="kpis">${kpi('Entries not audited', n0(rows.length), '', rows.length ? 'bad' : 'good')}${kpi('Shelves', n0(list.length))}</div>
+    <h3 class="cat">By shelf</h3>
+    ${list.length ? `<div class="scroll"><table class="bc">${tblHead(['Shelf', '>Entries', 'Oldest', ''])}<tbody>
+    ${list.map(o => `<tr><td>${esc(o.wh.name)} / Shelf ${esc(o.shelf.name)}</td><td class="n">${o.n}</td><td>${esc(fmtD(o.first))}</td><td><button class="btn light" data-sh="${o.shelf.id}">Open bin card</button></td></tr>`).join('')}</tbody></table></div>
+    <div class="hint">Open a shelf's bin card and use "Mark all audited" to audit its entries.</div>` : '<div class="empty">Every entry in this period is audited.</div>'}
+    ${rows.length ? `<h3 class="cat">Entries (oldest first)</h3><div class="scroll"><table class="bc">${tblHead(['Date', 'Shelf', 'Product', 'Type', '>Qty (pcs)', 'Entered by'])}<tbody>
+    ${rows.slice(0, 500).map(r => `<tr><td>${esc(fmtD(r.entry_time))} ${esc(fmtT(r.entry_time))}</td><td class="w">${esc(r.warehouse_name)} / Shelf ${esc(r.shelf_name)}</td><td class="w">${esc(r.product_code)} - ${esc(r.product_name)}</td><td>${esc(TL[r.entry_type] || r.entry_type)}</td><td class="n">${n0(r.total_pcs)}</td><td>${esc(r.concern_name || '')}</td></tr>`).join('')}</tbody></table></div>${rows.length > 500 ? '<div class="hint">Showing the oldest 500 entries. Download the CSV for the full list.</div>' : ''}` : ''}`;
+  repBind(() => saveCsv('Audit_pending', ['Date', 'Warehouse', 'Shelf', 'Product', 'Type', 'Qty (pcs)', 'Entered by'],
+    rows.map(r => [fmtD(r.entry_time) + ' ' + fmtT(r.entry_time), r.warehouse_name, r.shelf_name, r.product_code + ' - ' + r.product_name, TL[r.entry_type] || r.entry_type, r.total_pcs, r.concern_name || ''])));
+  el.querySelectorAll('[data-sh]').forEach(b => b.onclick = () => { const o = by.get(b.dataset.sh); bcRange.from = repRange.from; bcRange.to = repRange.to; bcProd = ''; go({ t: 'bincard', wh: o.wh, shelf: o.shelf }); });
+}
+
+/* --- Fast and dead stock --- */
+let movDays = '30';
+async function repMovement(el){
+  const days = parseInt(movDays, 10);
+  const rows = await rpcAll('report_movement', { p_days: days });
+  const dead = rows.filter(r => nz(r.stock_pcs) > 0 && nz(r.out_pcs) === 0).sort((a, b) => nz(b.stock_value) - nz(a.stock_value));
+  const fast = rows.filter(r => nz(r.out_pcs) > 0).sort((a, b) => nz(b.out_pcs) - nz(a.out_pcs)).slice(0, 10);
+  const deadVal = dead.reduce((a, r) => a + nz(r.stock_value), 0);
+  const extra = `<div class="row" style="margin-top:6px">${sel('mdays', 'Period', [['30', 'Last 30 days'], ['60', 'Last 60 days'], ['90', 'Last 90 days']], movDays)}</div>`;
+  el.innerHTML = repHead('Fast and dead stock', { range: false, extra }) + `<div class="kpis">${kpi('Dead stock items', n0(dead.length), 'no issue in ' + days + ' days', dead.length ? 'bad' : 'good')}${kpi('Dead stock value', money(deadVal), 'at MRP')}</div>
+    <div class="hint">Movement means stock issued to locations. Transfers between shelves are not counted.</div>
+    <h3 class="cat">Top 10 fast moving (last ${days} days)</h3>
+    ${fast.length ? `<div class="scroll"><table class="bc">${tblHead(['Product', '>Issued (pcs)', '>Issued value (BDT)', '>In stock (pcs)', '>Days of stock left', 'Last issue'])}<tbody>
+    ${fast.map(r => { const left = nz(r.stock_pcs) / (nz(r.out_pcs) / days); return `<tr><td class="w">${esc(r.product_code)} - ${esc(r.product_name)}</td><td class="n">${n0(r.out_pcs)}</td><td class="n">${n0(r.out_value)}</td><td class="n">${n0(r.stock_pcs)}</td><td class="n" style="color:${left < 7 ? 'var(--err)' : 'inherit'}">${left.toFixed(0)}</td><td>${r.last_out_date ? esc(fmtD(r.last_out_date + 'T12:00:00+06:00')) : ''}</td></tr>`; }).join('')}</tbody></table></div>` : '<div class="empty">No issues to locations in this period.</div>'}
+    <h3 class="cat">Dead stock (in stock, no issue in ${days} days)</h3>
+    ${dead.length ? `<div class="scroll"><table class="bc">${tblHead(['Product', '>In stock (pcs)', '>Value (BDT)', 'Last issue'])}<tbody>
+    ${dead.map(r => `<tr><td class="w">${esc(r.product_code)} - ${esc(r.product_name)}</td><td class="n">${n0(r.stock_pcs)}</td><td class="n">${n0(r.stock_value)}</td><td>${r.last_out_date ? esc(fmtD(r.last_out_date + 'T12:00:00+06:00')) : 'Never'}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">No dead stock in this period.</div>'}`;
+  repBind(() => saveCsv('Fast_and_dead_stock_' + days + 'd', ['Group', 'Product', 'Issued (pcs)', 'In stock (pcs)', 'Stock value', 'Last issue'],
+    fast.map(r => ['Fast moving', r.product_code + ' - ' + r.product_name, r.out_pcs, r.stock_pcs, Math.round(nz(r.stock_value)), r.last_out_date || '']).concat(dead.map(r => ['Dead stock', r.product_code + ' - ' + r.product_name, 0, r.stock_pcs, Math.round(nz(r.stock_value)), r.last_out_date || 'Never']))));
+  $('#mdays').onchange = e => { movDays = e.target.value; render(); };
 }
 
 /* ---------- Products ---------- */
