@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "app.vercel.uollbincardpro.twa",
+        "sha256_cert_fingerprints": ["B2:1C:EB:9D:0C:54:9F:2B:26:EF:53:A7:31:58:39:99:0F:EB:54:8B:70:91:E2:D3:EA:ED:C0:0E:73:9F:E5:6A"]
+      }
+    }]
