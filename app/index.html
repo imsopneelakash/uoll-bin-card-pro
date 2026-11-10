@@ -103,6 +103,10 @@ table.bc small{display:block;color:var(--mut);font-size:11px}
 td.stick,th.stick{position:sticky;left:0;background:#fff;z-index:1}
 details.sup{background:var(--card);border:1px solid var(--line);border-radius:12px;margin-bottom:8px;padding:10px 14px}
 details.sup summary{cursor:pointer;font-weight:600}
+.acts .btn.wo{background:#8a4b00}.acts .btn.ret{background:#00796b}
+.b-wo{background:#8a4b00}.b-rev{background:#6a1b9a}.b-ret{background:#00796b}
+tr.rv td{color:var(--mut)}
+.kpi.warn{border-top-color:#8a4b00}
 </style>
 </head>
 <body>
@@ -140,6 +144,9 @@ details.sup summary{cursor:pointer;font-weight:600}
     <label for="pCat">Category</label><select id="pCat"></select>
     <input type="text" id="pCatNew" class="hidden" maxlength="60" placeholder="New category name" aria-label="New category name" style="margin-top:8px">
     <label for="pMrp">MRP (BDT)</label><input type="number" id="pMrp" min="0" step="0.01" required>
+    <label for="pMin">Minimum stock (pcs)</label><input type="number" id="pMin" min="0" step="1" value="0" inputmode="numeric">
+    <div class="hint">A low stock alert and reorder suggestion appear when the total stock of all warehouses is at or below this number. Use 0 to switch it off.</div>
+    <label for="pLead">Supplier lead time (days)</label><input type="number" id="pLead" min="0" step="1" value="7" inputmode="numeric">
     <input type="hidden" id="pPer" value="1">
     <label class="chk" style="margin-top:14px"><input type="checkbox" id="pAct"> Active</label>
     <div class="row">
@@ -418,6 +425,8 @@ function typeLbl(x){
   const n = x.note || '';
   if (x.entry_type === 'out' && n.startsWith('Transfer to')) return 'Transfer out';
   if (x.entry_type === 'in' && n.startsWith('Transfer from')) return 'Transfer in';
+  if (n.startsWith('Write-off (')) return 'Write-off';
+  if (x.entry_type === 'in' && n.startsWith('Return from location:')) return 'Return from location';
   return TYPE_LABEL[x.entry_type] || x.entry_type;
 }
 
@@ -500,6 +509,8 @@ async function renderShelf(el){
       <button class="btn in" data-ty="in">Stock in</button>
       <button class="btn out" data-ty="transfer">Transfer out</button>
       <button class="btn cnt" data-ty="count">Physical count</button>
+      <button class="btn wo" data-ty="writeoff">Write-off</button>
+      <button class="btn ret" data-ty="return">Return from location</button>
       ${isAdmin() ? '<button class="btn opn" data-ty="opening">Opening balance</button>' : ''}
     </div>
     <button class="btn light" data-ty="bincard" style="width:100%;margin-bottom:14px">Open Bin Card (full journey of this shelf)</button>
@@ -512,6 +523,19 @@ async function renderShelf(el){
     const ty = b.dataset.ty;
     if (ty === 'count') return go({ t: 'count', wh, shelf });
     if (ty === 'bincard') return go({ t: 'bincard', wh, shelf });
+    if (ty === 'writeoff') {
+      const wl = products.filter(p => (stockMap[p.id] || 0) > 0);
+      if (!wl.length) return toast('There is no stock on this shelf to write off.');
+      if (await writeOffDialog(shelf, wl, stockMap)) { toast('Write-off recorded.'); render(); }
+      return;
+    }
+    if (ty === 'return') {
+      const { data: lc, error: le } = await db.from('locations').select('id,name,is_active').order('name');
+      const locs = le ? [] : (lc || []).filter(x => x.is_active);
+      if (!locs.length) return toast('No active location available.');
+      if (await returnDialog(shelf, locs, pr.data || [])) { toast('Return recorded.'); render(); }
+      return;
+    }
     let list = products, dests = null;
     if (ty === 'transfer') {
       list = products.filter(p => (stockMap[p.id] || 0) > 0);
@@ -526,6 +550,112 @@ async function renderShelf(el){
     }
     if (!list.length) return toast('No active products available.');
     if (await entryDialog(ty, shelf, list, stockMap, dests)) { toast(ty === 'transfer' ? 'Transfer completed.' : 'Entry saved.'); render(); }
+  });
+}
+
+/* ---------- Corrections, write-off, returns ---------- */
+const noteShown = x => {
+  const n = x.note || '';
+  if (/^Transfer (to|from)/.test(n)) return '';
+  const m = /^Return from location: .*?(?: - (.*))?$/.exec(n);
+  return m ? (m[1] || '') : n;
+};
+const badgesFor = (x, m) => {
+  const n = x.note || ''; let h = '';
+  if (/^Write-off \(/.test(n)) h += ' <span class="badge b-wo">Write-off</span>';
+  if (/^Return from location:/.test(n)) h += ' <span class="badge b-ret">Return</span>';
+  if (/^Reversal of /.test(n)) h += ' <span class="badge b-rev">Reversal</span>';
+  if (m && m.reversed) h += ' <span class="badge b-rev">Reversed</span>';
+  return h;
+};
+function formDlg(title, body, saveLabel, setup){
+  return new Promise(res => {
+    const d = document.createElement('dialog');
+    d.innerHTML = `<form><h3>${esc(title)}</h3>${body}<div class="err" role="alert"></div><div class="row"><button type="button" class="btn light" data-x>Cancel</button><button type="submit" class="btn">${esc(saveLabel)}</button></div></form>`;
+    document.body.appendChild(d);
+    const f = d.querySelector('form'), err = d.querySelector('.err'), sb = f.querySelector('[type=submit]');
+    d.querySelector('[data-x]').onclick = () => d.close();
+    d.onclose = () => { const ok = d.returnValue === 'ok'; d.remove(); res(ok); };
+    setup({
+      q: s => f.querySelector(s),
+      run: fn => { f.onsubmit = async e => {
+        e.preventDefault(); err.textContent = ''; sb.disabled = true; sb.textContent = 'Saving...';
+        let msg = '';
+        try { msg = await fn(); } catch (x) { msg = x.message || 'Could not save.'; }
+        if (msg) { err.textContent = msg; sb.disabled = false; sb.textContent = saveLabel; } else d.close('ok');
+      }; }
+    });
+    d.returnValue = ''; d.showModal();
+  });
+}
+const pickHtml = '<label>Product</label><input type="search" data-q placeholder="Search by name or code" autocomplete="off"><select data-p size="5" style="margin-top:6px" aria-label="Select product"></select><div class="hint" data-b></div>';
+function bindPick(api, info, emptyMsg){
+  const q = api.q('[data-q]'), s = api.q('[data-p]'), b = api.q('[data-b]');
+  let list = [];
+  const show = () => { const p = list.find(x => x.id === s.value); b.textContent = p ? info(p) : (list.length ? 'Select a product.' : (emptyMsg || 'No products available.')); };
+  const fill = () => {
+    const t = q.value.trim().toLowerCase(), keep = s.value;
+    const rows = list.filter(p => !t || p.name.toLowerCase().includes(t) || p.code.toLowerCase().includes(t));
+    s.innerHTML = rows.map(p => `<option value="${p.id}">${esc(p.code)} - ${esc(p.name)}</option>`).join('');
+    if (rows.some(p => p.id === keep)) s.value = keep; else if (rows.length) s.value = rows[0].id;
+    show();
+  };
+  q.oninput = fill; s.onchange = show;
+  return { set: l => { list = l; fill(); }, val: () => s.value };
+}
+function writeOffDialog(shelf, list, stockMap){
+  return formDlg('Write-off - Shelf ' + shelf.name, pickHtml + `
+    <label>Reason</label><select data-r><option>Damaged</option><option>Expired</option><option>Lost or missing</option><option>Other</option></select>
+    <label>Quantity (pcs)</label><input type="number" data-n min="1" step="1" inputmode="numeric">
+    <label>Details (required for Other)</label><textarea data-t rows="2" maxlength="200"></textarea>
+    <div class="hint">Removes the quantity from the shelf balance. It is recorded as a write-off and shown separately in reports, not as an issue to a location.</div>`, 'Record write-off', api => {
+    const pk = bindPick(api, p => 'Current balance on this shelf: ' + (stockMap[p.id] || 0) + ' pcs.'); pk.set(list);
+    api.run(async () => {
+      const pid = pk.val(), n = parseInt(api.q('[data-n]').value, 10) || 0, r = api.q('[data-r]').value, t = api.q('[data-t]').value.trim();
+      if (!pid) return 'Select a product.';
+      if (n <= 0) return 'Enter a quantity greater than zero.';
+      if (n > (stockMap[pid] || 0)) return 'The quantity is more than the shelf balance.';
+      if (r === 'Other' && !t) return 'Enter the details for this write-off.';
+      const { error } = await db.rpc('write_off_stock', { p_shelf: shelf.id, p_product: pid, p_pcs: n, p_reason: r, p_note: t || null });
+      return error ? (error.message || 'Could not save the write-off.') : '';
+    });
+  });
+}
+function returnDialog(shelf, locs, products){
+  return formDlg('Return from location - Shelf ' + shelf.name, `<label>Returned by (location)</label><select data-l>${locs.map(l => `<option value="${l.id}">${esc(l.name)}</option>`).join('')}</select>` + pickHtml + `
+    <label>Quantity (pcs)</label><input type="number" data-n min="1" step="1" inputmode="numeric">
+    <label>Return / challan no (optional)</label><input type="text" data-ref maxlength="60" autocomplete="off">
+    <label>Note (optional)</label><textarea data-t rows="2" maxlength="200"></textarea>
+    <div class="hint">Adds the quantity to this shelf and reduces the location total by the same amount.</div>`, 'Record return', api => {
+    const L = api.q('[data-l]'); let held = {};
+    const pk = bindPick(api, p => 'Currently with this location: ' + (held[p.id] || 0) + ' pcs.', 'This location holds no products to return.');
+    const load = async () => {
+      const { data } = await db.rpc('location_holdings', { p_location: L.value });
+      held = {}; (data || []).forEach(r => held[r.product_id] = Number(r.net_pcs));
+      pk.set(products.filter(p => held[p.id] > 0));
+    };
+    L.onchange = load; load();
+    api.run(async () => {
+      const pid = pk.val(), n = parseInt(api.q('[data-n]').value, 10) || 0;
+      if (!pid) return 'Select a product.';
+      if (n <= 0) return 'Enter a quantity greater than zero.';
+      if (n > (held[pid] || 0)) return 'The location only holds ' + (held[pid] || 0) + ' pcs of this product.';
+      const { error } = await db.rpc('return_from_location', { p_shelf: shelf.id, p_location: L.value, p_product: pid, p_pcs: n, p_note: api.q('[data-t]').value.trim() || null, p_ref: api.q('[data-ref]').value.trim() || null });
+      return error ? (error.message || 'Could not save the return.') : '';
+    });
+  });
+}
+function reverseDialog(entryId, x){
+  const sign = x.entry_type === 'in' ? 'added' : 'removed';
+  return formDlg('Reverse entry', `<div class="hint" style="margin:0 0 10px"><b>${esc(x.product_code)} - ${esc(x.product_name)}</b><br>${esc(typeLbl(x))}: ${Number(x.total_pcs)} pcs on ${esc(fmtD(x.entry_time))} ${esc(fmtT(x.entry_time))}</div>
+    <div class="hint" style="margin:0 0 6px">The original entry stays on the bin card. A new opposite entry is added, so ${Number(x.total_pcs)} pcs ${sign} by the original entry will be ${x.entry_type === 'in' ? 'removed' : 'added back'}.</div>
+    <label>Reason for reversal (required)</label><textarea data-t rows="3" maxlength="200" placeholder="For example: wrong quantity entered"></textarea>`, 'Reverse entry', api => {
+    api.run(async () => {
+      const t = api.q('[data-t]').value.trim();
+      if (t.length < 5) return 'Enter a reason of at least 5 characters.';
+      const { error } = await db.rpc('reverse_bin_entry', { p_entry: entryId, p_reason: t });
+      return error ? (error.message || 'Could not reverse the entry.') : '';
+    });
   });
 }
 
@@ -582,12 +712,14 @@ async function renderLocationDetail(el){
   const { loc } = view;
   const start = new Date(locRange.from + 'T00:00:00+06:00').toISOString();
   const end = new Date(new Date(locRange.to + 'T00:00:00+06:00').getTime() + 86400000).toISOString();
-  const [ps, tr] = await Promise.all([
+  const [ps, tr, rt] = await Promise.all([
     db.rpc('location_product_summary', { p_location: loc.id, p_from: locRange.from, p_to: locRange.to }),
     db.from('location_transfers').select('created_at,cartons,pcs,total_pcs,mrp,note,issue_no,products(code,name),shelves(name,warehouses(name))')
-      .eq('location_id', loc.id).gte('created_at', start).lt('created_at', end).order('created_at', { ascending: false }).limit(500)
+      .eq('location_id', loc.id).gte('created_at', start).lt('created_at', end).order('created_at', { ascending: false }).limit(500),
+    db.rpc('location_returns_list', { p_location: loc.id, p_from: locRange.from, p_to: locRange.to })
   ]);
   if (ps.error) throw ps.error; if (tr.error) throw tr.error;
+  const rets = rt.error ? [] : (rt.data || []);
   const sum = ps.data || [], list = tr.data || [];
   const fmt = t => new Date(t).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   const tp = sum.reduce((a, x) => a + Number(x.total_pcs), 0), tv = sum.reduce((a, x) => a + Number(x.total_value || 0), 0);
@@ -603,7 +735,10 @@ async function renderLocationDetail(el){
     <h3 class="cat">Transfer history</h3>
     ${list.length ? `<div class="scroll"><table><thead><tr><th>Date</th><th>Product</th><th>Issue No</th><th>From</th><th class="n">Qty (pcs)</th>${isAdmin() ? '<th class="n">Value (BDT)</th>' : ''}<th>Note</th></tr></thead><tbody>
       ${list.map(x => `<tr><td>${esc(fmt(x.created_at))}</td><td>${esc(x.products ? x.products.code + ' - ' + x.products.name : '')}</td><td>${esc(x.issue_no || '')}</td><td>${esc(from(x))}</td><td class="n">${n0(x.total_pcs)}</td>${isAdmin() ? `<td class="n">${n0(Number(x.total_pcs) * Number(x.mrp))}</td>` : ''}<td>${esc(x.note || '')}</td></tr>`).join('')}</tbody></table></div>
-      ${list.length >= 500 ? '<div class="hint">Showing the latest 500 transfers. Narrow the date range to see the rest.</div>' : ''}` : ''}`;
+      ${list.length >= 500 ? '<div class="hint">Showing the latest 500 transfers. Narrow the date range to see the rest.</div>' : ''}` : ''}
+    ${rets.length ? `<h3 class="cat">Returns from this location</h3><div class="scroll"><table><thead><tr><th>Date</th><th>Product</th><th>Return no</th><th>To</th><th class="n">Qty (pcs)</th>${isAdmin() ? '<th class="n">Value (BDT)</th>' : ''}<th>Note</th></tr></thead><tbody>
+      ${rets.map(x => `<tr><td>${esc(fmt(x.created_at))}</td><td>${esc(x.product_code + ' - ' + x.product_name)}</td><td>${esc(x.issue_no || '')}</td><td>${esc(x.warehouse_name + ' / Shelf ' + x.shelf_name)}</td><td class="n">${n0(x.kind === 'reversal' ? -x.total_pcs : x.total_pcs)}</td>${isAdmin() ? `<td class="n">${n0((x.kind === 'reversal' ? -1 : 1) * Number(x.total_pcs) * Number(x.mrp))}</td>` : ''}<td>${esc((x.kind === 'reversal' ? 'Correction: ' : '') + (x.note || ''))}</td></tr>`).join('')}</tbody></table></div>
+      <div class="hint">Returns are already subtracted from the totals above.</div>` : ''}`;
   bindRange();
   $('#bk').onclick = () => go({ t: 'loc' });
   $('#csv').onclick = () => {
@@ -627,6 +762,8 @@ const fmtD = t => new Date(t).toLocaleDateString('en-GB', Object.assign({ day: '
 const fmtT = t => new Date(t).toLocaleTimeString('en-US', Object.assign({ hour: '2-digit', minute: '2-digit' }, dhaka));
 const partyOf = x => {
   if (x.party) return x.party;
+  const wm = /^Write-off \(([^)]*)\)/.exec(x.note || ''); if (wm) return 'Write-off - ' + wm[1];
+  if (/^Reversal of /.test(x.note || '')) return 'Reversal (correction)';
   const m = /^Transfer (?:to location: |to |from )(.*?)(?: - .*)?$/.exec(x.note || '');
   if (m) return m[1];
   return { opening: 'Opening balance', count: 'Physical count', in: 'Stock in', out: 'Stock out' }[x.entry_type] || '';
@@ -638,6 +775,12 @@ async function renderBinCard(el){
   const { data, error } = await db.rpc('shelf_bin_card', { p_shelf: shelf.id, p_from: bcRange.from, p_to: bcRange.to });
   if (error) throw error;
   const all = data || [];
+  const meta = new Map();
+  try {
+    const mr = await rpcAll('bin_card_meta', { p_shelf: shelf.id, p_from: bcRange.from, p_to: bcRange.to });
+    mr.forEach(m => meta.set(m.product_code + '|' + new Date(m.entry_time).getTime() + '|' + m.total_pcs + '|' + m.entry_type, m));
+  } catch (e) { /* bin card still works without correction tools */ }
+  const mt = x => meta.get(x.product_code + '|' + new Date(x.entry_time).getTime() + '|' + x.total_pcs + '|' + x.entry_type);
   const prods = [...new Map(all.map(x => [x.product_code, x.product_name])).entries()].sort((a, b) => a[1].localeCompare(b[1]));
   if (bcProd && !prods.some(x => x[0] === bcProd)) bcProd = '';
   const rows = all.filter(x => !bcProd || x.product_code === bcProd);
@@ -658,15 +801,16 @@ async function renderBinCard(el){
       <div><b>Warehouse :</b> ${esc(wh.name)}<br><b>Shelf No :</b> ${esc(shelf.name)}</div>
       <div><b>Bin Card :</b> Shelf ${esc(shelf.name)}<small>${esc(bcRange.from)} to ${esc(bcRange.to)}</small></div>
     </div>
-    ${rows.length ? `<div class="scroll"><table class="bc"><thead><tr><th>Date</th><th>Time</th><th>Product Name</th><th class="n">Opening Qty</th><th>Department / Supplier / Location</th><th>Issue No</th><th class="n">Issued Qty (Transfer)</th><th class="n">Received Qty (Stock in)</th><th class="n">Closing Qty</th><th>Concern Person</th><th>Audit Person</th></tr></thead><tbody>
+    ${rows.length ? `<div class="scroll"><table class="bc"><thead><tr><th>Date</th><th>Time</th><th>Product Name</th><th class="n">Opening Qty</th><th>Department / Supplier / Location</th><th>Issue No</th><th class="n">Issued Qty (Transfer)</th><th class="n">Received Qty (Stock in)</th><th class="n">Closing Qty</th><th>Concern Person</th><th>Audit Person</th>${isAdmin() ? '<th class="noprint">Action</th>' : ''}</tr></thead><tbody>
       ${rows.map(x => { const per = x.pcs_per_carton || 1, isOut = x.entry_type === 'out', isIn = x.entry_type === 'in';
-        const showNote = x.note && !/^Transfer (to|from)/.test(x.note);
-        return `<tr><td>${esc(fmtD(x.entry_time))}</td><td>${esc(fmtT(x.entry_time))}</td><td class="w">${esc(x.product_code)} - ${esc(x.product_name)}</td>
+        const m = mt(x), nt = noteShown(x), n1 = x.note || '';
+        const rvOk = isAdmin() && m && !m.reversed && !m.is_reversal && (x.entry_type === 'in' || x.entry_type === 'out') && (!/^Transfer (to|from)/.test(n1) || /^Transfer to location:/.test(n1));
+        return `<tr class="${m && (m.reversed || m.is_reversal) ? 'rv' : ''}"><td>${esc(fmtD(x.entry_time))}</td><td>${esc(fmtT(x.entry_time))}</td><td class="w">${esc(x.product_code)} - ${esc(x.product_name)}</td>
         <td class="n">${qtyCell(x.balance_before, per)}</td>
-        <td class="w">${esc(partyOf(x))}${showNote ? `<small>${esc(x.note)}</small>` : ''}</td><td>${esc(x.issue_no || '')}</td>
+        <td class="w">${esc(partyOf(x))}${badgesFor(x, m)}${nt ? `<small>${esc(nt)}</small>` : ''}</td><td>${esc(x.issue_no || '')}</td>
         <td class="n">${isOut ? qtyCell(x.total_pcs, per) : ''}</td><td class="n">${isIn ? qtyCell(x.total_pcs, per) : ''}</td>
         <td class="n"><b>${qtyCell(x.balance_after, per)}</b></td>
-        <td class="w">${esc(x.concern_name || '')}</td><td class="w">${x.audit_name ? esc(x.audit_name) + `<small>${esc(fmtD(x.audit_time))}</small>` : ''}</td></tr>`; }).join('')}
+        <td class="w">${esc(x.concern_name || '')}</td><td class="w">${x.audit_name ? esc(x.audit_name) + `<small>${esc(fmtD(x.audit_time))}</small>` : ''}</td>${isAdmin() ? `<td class="noprint">${rvOk ? `<button class="btn ghost" data-rv="${esc(m.entry_id)}" style="color:var(--err);padding:4px 8px;font-size:12px">Reverse</button>` : ''}</td>` : ''}</tr>`; }).join('')}
       </tbody></table></div>${all.length >= 1000 ? '<div class="hint noprint">Showing the latest 1000 entries of this period. Narrow the dates to see earlier entries.</div>' : ''}`
       : '<div class="empty">No entries in the selected dates.</div>'}
     <div class="papersign"><span>Prepared By</span><span>Checked by</span><span>Approved by</span></div>`;
@@ -674,6 +818,10 @@ async function renderBinCard(el){
   $('#bf').onchange = e => { if (e.target.value) { bcRange.from = e.target.value; render(); } };
   $('#bt').onchange = e => { if (e.target.value) { bcRange.to = e.target.value; render(); } };
   $('#bp').onchange = e => { bcProd = e.target.value; render(); };
+  el.querySelectorAll('[data-rv]').forEach(b => b.onclick = async () => {
+    const row = rows.find(x => { const m = mt(x); return m && m.entry_id === b.dataset.rv; });
+    if (row && await reverseDialog(b.dataset.rv, row)) { toast('Entry reversed. A reversal entry was added to the bin card.'); render(); }
+  });
   $('#bm').onclick = () => { const n = new Date(); bcRange.from = ymd(new Date(n.getFullYear(), n.getMonth(), 1)); bcRange.to = ymd(n); render(); };
   $('#ba').onclick = () => { bcRange.from = '2020-01-01'; bcRange.to = ymd(new Date()); render(); };
   $('#bpr').onclick = () => window.print();
@@ -778,7 +926,10 @@ const REPORTS = [
   { k: 'issue', t: 'Issue no search', d: 'Find every entry that carries an issue no' },
   { k: 'activity', t: 'User activity', d: 'Entries per user and per day' },
   { k: 'audit', t: 'Audit pending', d: 'Entries that are not audited yet, by shelf' },
-  { k: 'movement', t: 'Fast and dead stock', d: 'Top moving products and stock that has not moved' }
+  { k: 'movement', t: 'Fast and dead stock', d: 'Top moving products and stock that has not moved' },
+  { k: 'reorder', t: 'Reorder suggestion', d: 'Products at or below minimum stock and how much to order' },
+  { k: 'writeoff', t: 'Write-offs', d: 'Damaged, expired and lost stock with quantity and value' },
+  { k: 'corrections', t: 'Reversals and returns', d: 'Corrected entries with reasons, and returns from locations' }
 ];
 const nz = v => Number(v || 0);
 const money = v => '&#2547; ' + n0(v);
@@ -829,6 +980,9 @@ async function renderReports(el){
       ${kpi('Issued to locations today', n0(x.issues_pcs) + ' pcs', n0(x.issues_entries) + ' entries &middot; ' + money(x.issues_value))}
       ${kpi('Count mismatches today', n0(x.counts_mismatch), 'of ' + n0(x.counts_total) + ' counts', nz(x.counts_mismatch) ? 'bad' : 'good')}
       ${kpi('Audit pending', n0(x.unaudited), 'entries not audited', nz(x.unaudited) ? 'bad' : 'good')}
+      ${kpi('Written off today', n0(x.writeoff_pcs) + ' pcs', money(x.writeoff_value), nz(x.writeoff_pcs) ? 'warn' : '')}
+      ${kpi('Returned from locations today', n0(x.returns_pcs) + ' pcs', n0(x.returns_entries) + ' entries')}
+      ${kpi('Below minimum stock', n0(x.low_stock), 'products to reorder (see Reorder suggestion)', nz(x.low_stock) ? 'bad' : 'good')}
     </div>
     <h3 class="cat">Inventory by warehouse</h3>
     <div class="sum">${w.map(r => `<div class="sumc"><b>${esc(r.warehouse_name)}</b><span>${n0(r.total_pcs)} pcs &middot; ${money(r.total_value)}</span></div>`).join('') || '<div class="empty">No warehouses yet.</div>'}
@@ -840,13 +994,15 @@ async function renderReports(el){
 
 async function renderRep(el){
   if (!isAdmin()) { el.innerHTML = '<div class="empty">You do not have access to this page.</div>'; return; }
-  const fn = { ledger: repLedger, location: repLocation, count: repCount, supplier: repSupplier, issue: repIssue, activity: repActivity, audit: repAudit, movement: repMovement }[view.rep];
+  const fn = { ledger: repLedger, location: repLocation, count: repCount, supplier: repSupplier, issue: repIssue, activity: repActivity, audit: repAudit, movement: repMovement, reorder: repReorder, writeoff: repWriteoff, corrections: repCorrections }[view.rep];
   if (!fn) return go({ t: 'reports' });
   await fn(el);
 }
 
 /* --- Stock ledger --- */
 let ledMode = 'product', ledWh = '', ledQ = '';
+const LK = ['op', 'rec', 'ret', 'iss', 'wo', 'mi', 'mo', 'cor', 'adj', 'cl', 'val'];
+const LH = ['Opening', 'Received', 'Returned from locations', 'Issued', 'Written off', 'Shelf transfer in', 'Shelf transfer out', 'Corrections (reversals)', 'Adjustment', 'Closing', 'Closing value (BDT)'];
 async function repLedger(el){
   const [wl, rows] = await Promise.all([db.from('warehouses').select('id,name').order('name'),
     rpcAll('report_stock_ledger', { p_from: repRange.from, p_to: repRange.to, p_warehouse: ledWh || null })]);
@@ -857,23 +1013,25 @@ async function repLedger(el){
   list.forEach(r => {
     const shelf = r.warehouse_name + ' / Shelf ' + r.shelf_name, prod = r.product_code + ' - ' + r.product_name;
     const k = ledMode === 'product' ? r.product_code : ledMode === 'shelf' ? shelf : r.product_code + '|' + shelf;
-    let o = g.get(k); if (!o) { o = { a: ledMode === 'shelf' ? shelf : prod, b: shelf, op: 0, rec: 0, iss: 0, mi: 0, mo: 0, cl: 0, val: 0 }; g.set(k, o); }
-    o.op += nz(r.opening); o.rec += nz(r.received); o.iss += nz(r.issued); o.mi += nz(r.moved_in); o.mo += nz(r.moved_out); o.cl += nz(r.closing); o.val += nz(r.closing) * nz(r.mrp);
+    let o = g.get(k); if (!o) { o = { a: ledMode === 'shelf' ? shelf : prod, b: shelf }; LK.forEach(f => o[f] = 0); g.set(k, o); }
+    o.op += nz(r.opening); o.rec += nz(r.received); o.ret += nz(r.returned); o.iss += nz(r.issued); o.wo += nz(r.written_off);
+    o.mi += nz(r.moved_in); o.mo += nz(r.moved_out); o.cor += nz(r.corrections); o.cl += nz(r.closing); o.val += nz(r.closing) * nz(r.mrp);
   });
   const out = [...g.values()].sort((a, b) => a.a.localeCompare(b.a) || a.b.localeCompare(b.b));
-  out.forEach(o => o.adj = o.cl - o.op - o.rec + o.iss - o.mi + o.mo);
-  const T = out.reduce((t, o) => { ['op', 'rec', 'iss', 'mi', 'mo', 'adj', 'cl', 'val'].forEach(k => t[k] += o[k]); return t; }, { op: 0, rec: 0, iss: 0, mi: 0, mo: 0, adj: 0, cl: 0, val: 0 });
+  out.forEach(o => o.adj = o.cl - o.op - o.rec - o.ret + o.iss + o.wo - o.mi + o.mo - o.cor);
+  const T = out.reduce((t, o) => { LK.forEach(f => t[f] += o[f]); return t; }, Object.fromEntries(LK.map(f => [f, 0])));
   const lead = ledMode === 'detail' ? ['Product', 'Shelf'] : [ledMode === 'shelf' ? 'Shelf' : 'Product'];
   const extra = `<div class="row" style="margin-top:10px">${sel('lw', 'Warehouse', [['', 'All warehouses']].concat(wl.data.map(w => [w.id, w.name])), ledWh)}
     ${sel('lm', 'View', [['product', 'Product wise'], ['shelf', 'Shelf wise'], ['detail', 'Product by shelf']], ledMode)}
     <div style="flex:1"><label for="lq">Search product</label><input type="search" id="lq" value="${esc(ledQ)}" placeholder="Name or code"></div></div>`;
   const cell = o => (ledMode === 'detail' ? `<td>${esc(o.a)}</td><td>${esc(o.b)}</td>` : `<td>${esc(o.a)}</td>`);
-  el.innerHTML = repHead('Stock ledger', { extra }) + `<div class="hint">All quantities are in pcs. Received = stock in from suppliers. Issued = stock out to locations. Shelf transfers between shelves are shown separately. Adjustment = physical count and opening balance changes.</div>
-    ${out.length ? `<div class="scroll"><table class="bc">${tblHead(lead.concat(['>Opening', '>Received', '>Issued', '>Shelf transfer in', '>Shelf transfer out', '>Adjustment', '>Closing', '>Closing value (BDT)']))}<tbody>
-    ${out.map(o => `<tr>${cell(o)}<td class="n">${n0(o.op)}</td><td class="n">${n0(o.rec)}</td><td class="n">${n0(o.iss)}</td><td class="n">${n0(o.mi)}</td><td class="n">${n0(o.mo)}</td><td class="n">${n0(o.adj)}</td><td class="n"><b>${n0(o.cl)}</b></td><td class="n">${n0(o.val)}</td></tr>`).join('')}
-    <tr><th colspan="${lead.length}">Total</th><th class="n">${n0(T.op)}</th><th class="n">${n0(T.rec)}</th><th class="n">${n0(T.iss)}</th><th class="n">${n0(T.mi)}</th><th class="n">${n0(T.mo)}</th><th class="n">${n0(T.adj)}</th><th class="n">${n0(T.cl)}</th><th class="n">${n0(T.val)}</th></tr></tbody></table></div>` : '<div class="empty">No stock movement found.</div>'}`;
-  repBind(() => saveCsv('Stock_ledger_' + ledMode, lead.concat(['Opening', 'Received', 'Issued', 'Shelf transfer in', 'Shelf transfer out', 'Adjustment', 'Closing', 'Closing value']),
-    out.map(o => (ledMode === 'detail' ? [o.a, o.b] : [o.a]).concat([o.op, o.rec, o.iss, o.mi, o.mo, o.adj, o.cl, Math.round(o.val)]))));
+  const nums = (o, th) => LK.map(f => th ? `<th class="n">${n0(o[f])}</th>` : (f === 'cl' ? `<td class="n"><b>${n0(o[f])}</b></td>` : `<td class="n">${n0(o[f])}</td>`)).join('');
+  el.innerHTML = repHead('Stock ledger', { extra }) + `<div class="hint">All quantities are in pcs. Received = stock in from suppliers. Returned = taken back from locations. Issued = stock out to locations. Written off = damaged, expired or lost stock. Corrections = reversals of wrong entries. Adjustment = physical count and opening balance changes.</div>
+    ${out.length ? `<div class="scroll"><table class="bc">${tblHead(lead.concat(LH.map(h => '>' + h)))}<tbody>
+    ${out.map(o => `<tr>${cell(o)}${nums(o, false)}</tr>`).join('')}
+    <tr><th colspan="${lead.length}">Total</th>${nums(T, true)}</tr></tbody></table></div>` : '<div class="empty">No stock movement found.</div>'}`;
+  repBind(() => saveCsv('Stock_ledger_' + ledMode, lead.concat(LH.slice(0, 10), ['Closing value']),
+    out.map(o => (ledMode === 'detail' ? [o.a, o.b] : [o.a]).concat(LK.map(f => f === 'val' ? Math.round(o.val) : o[f])))));
   $('#lw').onchange = e => { ledWh = e.target.value; render(); };
   $('#lm').onchange = e => { ledMode = e.target.value; render(); };
   $('#lq').onchange = e => { ledQ = e.target.value; render(); };
@@ -1035,6 +1193,57 @@ async function repMovement(el){
   $('#mdays').onchange = e => { movDays = e.target.value; render(); };
 }
 
+/* --- Reorder suggestion --- */
+let roDays = '30', roCover = '30', roAll = '0';
+async function repReorder(el){
+  const rows = await rpcAll('report_reorder', { p_days: parseInt(roDays, 10), p_cover: parseInt(roCover, 10) });
+  const need = rows.filter(r => r.status !== 'OK' || nz(r.suggest_pcs) > 0);
+  const shown = roAll === '1' ? rows : need;
+  const low = rows.filter(r => r.status === 'Below minimum' || r.status === 'Out of stock').length;
+  const soon = rows.filter(r => r.status === 'Runs out within lead time').length;
+  const tv = need.reduce((a, r) => a + nz(r.suggest_value), 0);
+  const extra = `<div class="row" style="margin-top:6px">${sel('rod', 'Demand period', [['30', 'Last 30 days'], ['60', 'Last 60 days'], ['90', 'Last 90 days']], roDays)}
+    ${sel('roc', 'Cover after lead time', [['15', '15 days'], ['30', '30 days'], ['45', '45 days'], ['60', '60 days']], roCover)}
+    ${sel('roa', 'List', [['0', 'Needs action'], ['1', 'All products']], roAll)}</div>`;
+  const bad = s => s === 'OK' ? 'b-ok' : s === 'Runs out within lead time' ? 'b-wo' : 'b-bad';
+  el.innerHTML = repHead('Reorder suggestion', { range: false, extra }) + `<div class="kpis">${kpi('Below minimum or out of stock', n0(low), '', low ? 'bad' : 'good')}${kpi('Will run out within lead time', n0(soon), '', soon ? 'warn' : 'good')}${kpi('Suggested order value', money(tv), 'at MRP')}</div>
+    <div class="hint">Demand = pcs issued to locations in the period, less returns. Suggested order = average daily demand x (lead time + cover days) + minimum stock - current stock of all warehouses. Set the minimum stock and lead time on each product.</div>
+    ${shown.length ? `<div class="scroll"><table class="bc">${tblHead(['Product', '>Minimum', '>In stock', '>Avg per day', '>Days left', '>Lead time (days)', '>Suggested order (pcs)', '>Value (BDT)', 'Status'])}<tbody>
+    ${shown.map(r => `<tr><td class="w">${esc(r.product_code)} - ${esc(r.product_name)}</td><td class="n">${n0(r.min_pcs)}</td><td class="n">${n0(r.stock_pcs)}</td><td class="n">${nz(r.avg_daily).toLocaleString('en-US', { maximumFractionDigits: 1 })}</td><td class="n">${r.days_left == null ? '-' : n0(r.days_left)}</td><td class="n">${n0(r.lead_days)}</td><td class="n"><b>${n0(r.suggest_pcs)}</b></td><td class="n">${n0(r.suggest_value)}</td><td><span class="badge ${bad(r.status)}">${esc(r.status)}</span></td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">No product needs reordering right now.</div>'}`;
+  repBind(() => saveCsv('Reorder_suggestion', ['Code', 'Product', 'Minimum', 'In stock', 'Avg per day', 'Days left', 'Lead time (days)', 'Suggested order (pcs)', 'Value (MRP)', 'Status'],
+    shown.map(r => [r.product_code, r.product_name, r.min_pcs, r.stock_pcs, r.avg_daily, r.days_left ?? '', r.lead_days, r.suggest_pcs, Math.round(nz(r.suggest_value)), r.status])));
+  $('#rod').onchange = e => { roDays = e.target.value; render(); };
+  $('#roc').onchange = e => { roCover = e.target.value; render(); };
+  $('#roa').onchange = e => { roAll = e.target.value; render(); };
+}
+
+/* --- Write-offs --- */
+async function repWriteoff(el){
+  const rows = await rpcAll('report_writeoff', { p_from: repRange.from, p_to: repRange.to });
+  const live = rows.filter(r => !r.reversed);
+  const by = new Map();
+  live.forEach(r => { let o = by.get(r.reason); if (!o) { o = { n: 0, pcs: 0, val: 0 }; by.set(r.reason, o); } o.n++; o.pcs += nz(r.qty); o.val += nz(r.qty) * nz(r.mrp); });
+  const tp = live.reduce((a, r) => a + nz(r.qty), 0), tv = live.reduce((a, r) => a + nz(r.qty) * nz(r.mrp), 0);
+  el.innerHTML = repHead('Write-offs') + `<div class="kpis">${kpi('Total written off', n0(tp) + ' pcs', money(tv) + ' at MRP', tp ? 'warn' : 'good')}${[...by.entries()].map(([k, o]) => kpi(k, n0(o.pcs) + ' pcs', n0(o.n) + ' entries &middot; ' + money(o.val))).join('')}</div>
+    <div class="hint">Reversed write-offs are shown but not counted in the totals.</div>
+    ${rows.length ? `<div class="scroll"><table class="bc">${tblHead(['Date', 'Shelf', 'Product', 'Reason', '>Qty (pcs)', '>Value (BDT)', 'Details', 'Entered by', ''])}<tbody>
+    ${rows.map(r => `<tr><td>${esc(fmtD(r.entry_time))} ${esc(fmtT(r.entry_time))}</td><td class="w">${esc(r.warehouse_name)} / Shelf ${esc(r.shelf_name)}</td><td class="w">${esc(r.product_code)} - ${esc(r.product_name)}</td><td>${esc(r.reason)}</td><td class="n">${n0(r.qty)}</td><td class="n">${n0(nz(r.qty) * nz(r.mrp))}</td><td class="w">${esc(r.detail || '')}</td><td>${esc(r.entered_by)}</td><td>${r.reversed ? '<span class="badge b-rev">Reversed</span>' : ''}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">No write-offs in the selected dates.</div>'}`;
+  repBind(() => saveCsv('Write_offs', ['Date', 'Warehouse', 'Shelf', 'Product', 'Reason', 'Qty (pcs)', 'Value (MRP)', 'Details', 'Entered by', 'Reversed'],
+    rows.map(r => [fmtD(r.entry_time) + ' ' + fmtT(r.entry_time), r.warehouse_name, r.shelf_name, r.product_code + ' - ' + r.product_name, r.reason, r.qty, Math.round(nz(r.qty) * nz(r.mrp)), r.detail || '', r.entered_by, r.reversed ? 'Yes' : ''])));
+}
+
+/* --- Reversals and returns --- */
+async function repCorrections(el){
+  const rows = await rpcAll('report_corrections', { p_from: repRange.from, p_to: repRange.to });
+  const rv = rows.filter(r => r.kind.startsWith('Reversed')), rt = rows.filter(r => !r.kind.startsWith('Reversed'));
+  const rtp = rt.reduce((a, r) => a + nz(r.qty), 0), rtv = rt.reduce((a, r) => a + nz(r.value), 0);
+  el.innerHTML = repHead('Reversals and returns') + `<div class="kpis">${kpi('Reversed entries', n0(rv.length), '', rv.length ? 'warn' : 'good')}${kpi('Returned from locations', n0(rtp) + ' pcs', money(rtv) + ' at MRP')}</div>
+    ${rows.length ? `<div class="scroll"><table class="bc">${tblHead(['Date', 'Type', 'Shelf', 'Product', 'Location', '>Qty (pcs)', '>Value (BDT)', 'Reason / note', 'By'])}<tbody>
+    ${rows.map(r => `<tr><td>${esc(fmtD(r.entry_time))} ${esc(fmtT(r.entry_time))}</td><td>${esc(r.kind)}</td><td class="w">${esc(r.warehouse_name)} / Shelf ${esc(r.shelf_name)}</td><td class="w">${esc(r.product_code)} - ${esc(r.product_name)}</td><td>${esc(r.location_name || '')}</td><td class="n">${n0(r.qty)}</td><td class="n">${n0(r.value)}</td><td class="w">${esc(r.reason || '')}</td><td>${esc(r.by_name)}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">No reversals or returns in the selected dates.</div>'}`;
+  repBind(() => saveCsv('Reversals_and_returns', ['Date', 'Type', 'Warehouse', 'Shelf', 'Product', 'Location', 'Qty (pcs)', 'Value (MRP)', 'Reason / note', 'By'],
+    rows.map(r => [fmtD(r.entry_time) + ' ' + fmtT(r.entry_time), r.kind, r.warehouse_name, r.shelf_name, r.product_code + ' - ' + r.product_name, r.location_name || '', r.qty, Math.round(nz(r.value)), r.reason || '', r.by_name])));
+}
+
 /* ---------- Products ---------- */
 document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => go({ t: b.dataset.tab }));
 
@@ -1049,10 +1258,11 @@ function productForm(p, cats, defCode){
     $('#pCode').value = p ? p.code : defCode; $('#pCode').disabled = !!p;
     $('#pName').value = p ? p.name : ''; $('#pMrp').value = p ? p.mrp : '';
     $('#pPer').value = p ? p.pcs_per_carton : 1; $('#pAct').checked = p ? p.is_active : true;
+    $('#pMin').value = p ? (p.min_qty || 0) : 0; $('#pLead').value = p ? (p.lead_time_days ?? 7) : 7;
     d.onclose = () => {
       if (d.returnValue !== 'ok') return res(null);
       res({ code: $('#pCode').value.trim(), name: $('#pName').value.trim(), category: (sel.value === '__new' ? nw.value : sel.value).trim() || null,
-            mrp: Number($('#pMrp').value), pcs_per_carton: parseInt($('#pPer').value, 10), is_active: $('#pAct').checked });
+            mrp: Number($('#pMrp').value), min_qty: Math.max(0, parseInt($('#pMin').value, 10) || 0), lead_time_days: Math.max(0, parseInt($('#pLead').value, 10) || 0), pcs_per_carton: parseInt($('#pPer').value, 10), is_active: $('#pAct').checked });
     };
     d.showModal();
   });
@@ -1082,7 +1292,7 @@ async function renderProducts(el){
     const g = {}; rows.forEach(p => (g[p.category || 'Uncategorized'] ??= []).push(p));
     $('#plist').innerHTML = rows.length ? Object.keys(g).sort().map(k => `<h3 class="cat">${esc(k)} (${g[k].length})</h3><div class="list">${g[k].map(p =>
       `<${isAdmin() ? 'button' : 'div'} class="item ${p.is_active ? '' : 'off'} ${isAdmin() ? '' : 'ro'}" data-id="${p.id}">
-        <span class="grow"><b>${esc(p.name)}</b><span class="sub">Code ${esc(p.code)}</span></span>
+        <span class="grow"><b>${esc(p.name)}</b><span class="sub">Code ${esc(p.code)}${isAdmin() && p.min_qty > 0 ? ' &middot; Min ' + p.min_qty + ' pcs' : ''}</span></span>
         ${p.is_active ? '' : '<span class="tag">Inactive</span>'}<b>&#2547; ${Number(p.mrp).toLocaleString('en-US')}</b></${isAdmin() ? 'button' : 'div'}>`).join('')}</div>`).join('')
       : '<div class="empty">No products match your search.</div>';
   };
