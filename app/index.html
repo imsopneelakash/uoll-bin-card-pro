@@ -317,9 +317,8 @@ async function renderWarehouses(el){
   const add = $('#addWh');
   if (add) add.onclick = async () => {
     const name = await askName('New warehouse name'); if (!name) return;
-    const { error } = await db.from('warehouses').insert({ name });
-    if (error) toast(error.code === '23505' ? 'A warehouse with this name already exists.' : 'Could not add the warehouse.');
-    else { toast('Warehouse added.'); render(); }
+    const msg = await place('warehouse', 'add', { name });
+    if (msg) toast(msg); else { toast('Warehouse added.'); render(); }
   };
 }
 
@@ -329,11 +328,11 @@ async function renderShelves(el){
   if (error) throw error;
   const rows = (data || []).filter(s => isAdmin() || s.is_active);
   el.innerHTML = `<button class="back" id="bk">&larr; Warehouses</button>
-    <div class="crumb"><h2>${esc(wh.name)}</h2>${isAdmin() ? '<button class="btn" id="addSh">Add shelf</button>' : ''}</div>
-    <div class="list">${rows.length ? rows.map(s => `<div class="item ${s.is_active ? '' : 'off'}" style="cursor:default">
+    <div class="crumb"><h2>${esc(wh.name)}</h2>${isAdmin() ? '<button class="btn light" id="rnWh">Rename</button><button class="btn light" id="dlWh" style="color:var(--err)">Delete</button><button class="btn" id="addSh">Add shelf</button>' : ''}</div>
+    <div class="list">${rows.length ? rows.map(s => `<div class="item ${s.is_active ? '' : 'off'}" style="cursor:default;flex-wrap:wrap">
       <button class="grow back" style="text-align:left;color:inherit" data-id="${s.id}" data-name="${esc(s.name)}"><b>Shelf ${esc(s.name)}</b><span class="sub">View stock on this shelf</span></button>
       ${s.is_active ? '' : '<span class="tag">Inactive</span>'}
-      ${isAdmin() ? `<button class="btn ghost" data-tg="${s.id}" data-on="${s.is_active}" style="color:var(--pri)">${s.is_active ? 'Deactivate' : 'Activate'}</button>` : ''}</div>`).join('')
+      ${isAdmin() ? `<button class="btn ghost" data-rn="${s.id}" data-nm="${esc(s.name)}" style="color:var(--pri)">Rename</button><button class="btn ghost" data-dl="${s.id}" data-nm="${esc(s.name)}" style="color:var(--err)">Delete</button><button class="btn ghost" data-tg="${s.id}" data-on="${s.is_active}" style="color:var(--pri)">${s.is_active ? 'Deactivate' : 'Activate'}</button>` : ''}</div>`).join('')
       : '<div class="empty">No shelves in this warehouse yet.' + (isAdmin() ? ' Add the first shelf.' : '') + '</div>'}</div>`;
   $('#bk').onclick = () => go({ t: 'wh' });
   el.querySelectorAll('button[data-name]').forEach(b => b.onclick = () => go({ t: 'shelf', wh, shelf: { id: b.dataset.id, name: b.dataset.name } }));
@@ -341,12 +340,32 @@ async function renderShelves(el){
     const { error } = await db.from('shelves').update({ is_active: b.dataset.on !== 'true' }).eq('id', b.dataset.tg);
     if (error) toast('Could not update the shelf.'); else render();
   });
+  el.querySelectorAll('button[data-rn]').forEach(b => b.onclick = async () => {
+    const name = await askName('Rename shelf', b.dataset.nm); if (!name || name === b.dataset.nm) return;
+    const msg = await place('shelf', 'rename', { id: b.dataset.rn, name });
+    if (msg) toast(msg); else { toast('Shelf renamed.'); render(); }
+  });
+  el.querySelectorAll('button[data-dl]').forEach(b => b.onclick = async () => {
+    if (!delConfirm('shelf', b.dataset.nm)) return;
+    const msg = await place('shelf', 'delete', { id: b.dataset.dl });
+    if (msg) toast(msg); else { toast('Shelf deleted.'); render(); }
+  });
+  const rw = $('#rnWh'), dw = $('#dlWh');
+  if (rw) rw.onclick = async () => {
+    const name = await askName('Rename warehouse', wh.name); if (!name || name === wh.name) return;
+    const msg = await place('warehouse', 'rename', { id: wh.id, name });
+    if (msg) toast(msg); else { toast('Warehouse renamed.'); go({ t: 'shelves', wh: { id: wh.id, name } }); }
+  };
+  if (dw) dw.onclick = async () => {
+    if (!delConfirm('warehouse', wh.name)) return;
+    const msg = await place('warehouse', 'delete', { id: wh.id });
+    if (msg) toast(msg); else { toast('Warehouse deleted.'); go({ t: 'wh' }); }
+  };
   const add = $('#addSh');
   if (add) add.onclick = async () => {
     const name = await askName('New shelf name'); if (!name) return;
-    const { error } = await db.from('shelves').insert({ warehouse_id: wh.id, name });
-    if (error) toast(error.code === '23505' ? 'This shelf already exists in the warehouse.' : 'Could not add the shelf.');
-    else { toast('Shelf added.'); render(); }
+    const msg = await place('shelf', 'add', { name, parent: wh.id });
+    if (msg) toast(msg); else { toast('Shelf added.'); render(); }
   };
 }
 
@@ -674,10 +693,10 @@ async function renderLocations(el){
   el.innerHTML = `<div class="crumb"><h2>Locations</h2>${isAdmin() ? '<button class="btn" id="addLoc">Add location</button>' : ''}</div>
     ${rangeBar()}
     <div class="sum"><div class="sumc"><b>Total transferred</b><span>${n0(totPcs)} pcs${isAdmin() ? ' &middot; &#2547; ' + n0(totVal) : ''}</span></div></div>
-    <div class="list" style="margin-top:12px">${rows.length ? rows.map(l => { const x = stat[l.id] || {}; return `<div class="item ${l.is_active ? '' : 'off'}" style="cursor:default">
+    <div class="list" style="margin-top:12px">${rows.length ? rows.map(l => { const x = stat[l.id] || {}; return `<div class="item ${l.is_active ? '' : 'off'}" style="cursor:default;flex-wrap:wrap">
       <button class="grow back" style="text-align:left;color:inherit" data-id="${l.id}" data-name="${esc(l.name)}"><b>${esc(l.name)}</b><span class="sub">${n0(x.transfers)} transfers &middot; ${n0(x.total_pcs)} pcs${isAdmin() ? ' &middot; &#2547; ' + n0(x.total_value) : ''}</span></button>
       ${l.is_active ? '' : '<span class="tag">Inactive</span>'}
-      ${isAdmin() ? `<button class="btn ghost" data-rn="${l.id}" data-nm="${esc(l.name)}" style="color:var(--pri)">Rename</button><button class="btn ghost" data-tg="${l.id}" data-on="${l.is_active}" style="color:var(--pri)">${l.is_active ? 'Deactivate' : 'Activate'}</button>` : ''}</div>`; }).join('')
+      ${isAdmin() ? `<button class="btn ghost" data-rn="${l.id}" data-nm="${esc(l.name)}" style="color:var(--pri)">Rename</button><button class="btn ghost" data-dl="${l.id}" data-nm="${esc(l.name)}" style="color:var(--err)">Delete</button><button class="btn ghost" data-tg="${l.id}" data-on="${l.is_active}" style="color:var(--pri)">${l.is_active ? 'Deactivate' : 'Activate'}</button>` : ''}</div>`; }).join('')
       : '<div class="empty">No locations yet.' + (isAdmin() ? ' Add the first location.' : '') + '</div>'}</div>`;
   bindRange();
   el.querySelectorAll('button[data-name]').forEach(b => b.onclick = () => go({ t: 'locdetail', loc: { id: b.dataset.id, name: b.dataset.name } }));
@@ -687,16 +706,19 @@ async function renderLocations(el){
   });
   el.querySelectorAll('button[data-rn]').forEach(b => b.onclick = async () => {
     const name = await askName('Rename location', b.dataset.nm); if (!name || name === b.dataset.nm) return;
-    const { error } = await db.from('locations').update({ name }).eq('id', b.dataset.rn);
-    if (error) toast(error.code === '23505' ? 'A location with this name already exists.' : 'Could not rename the location.');
-    else { toast('Location renamed.'); render(); }
+    const msg = await place('location', 'rename', { id: b.dataset.rn, name });
+    if (msg) toast(msg); else { toast('Location renamed.'); render(); }
+  });
+  el.querySelectorAll('button[data-dl]').forEach(b => b.onclick = async () => {
+    if (!delConfirm('location', b.dataset.nm)) return;
+    const msg = await place('location', 'delete', { id: b.dataset.dl });
+    if (msg) toast(msg); else { toast('Location deleted.'); render(); }
   });
   const add = $('#addLoc');
   if (add) add.onclick = async () => {
     const name = await askName('New location name'); if (!name) return;
-    const { error } = await db.from('locations').insert({ name });
-    if (error) toast(error.code === '23505' ? 'A location with this name already exists.' : 'Could not add the location.');
-    else { toast('Location added.'); render(); }
+    const msg = await place('location', 'add', { name });
+    if (msg) toast(msg); else { toast('Location added.'); render(); }
   };
 }
 
@@ -1236,6 +1258,13 @@ async function repCorrections(el){
   repBind(() => saveCsv('Reversals_and_returns', ['Date', 'Type', 'Warehouse', 'Shelf', 'Product', 'Location', 'Qty (pcs)', 'Value (MRP)', 'Reason / note', 'By'],
     rows.map(r => [fmtD(r.entry_time) + ' ' + fmtT(r.entry_time), r.kind, r.warehouse_name, r.shelf_name, r.product_code + ' - ' + r.product_name, r.location_name || '', r.qty, Math.round(nz(r.value)), r.reason || '', r.by_name])));
 }
+
+/* ---------- Add, rename, delete places (master / admin) ---------- */
+async function place(kind, action, o = {}){
+  const { error } = await db.rpc('manage_place', { p_kind: kind, p_action: action, p_id: o.id || null, p_name: o.name || null, p_parent: o.parent || null });
+  return error ? (error.message || 'Could not complete the action.') : '';
+}
+const delConfirm = (kind, name) => confirm('Delete ' + kind + ' "' + name + '"?\n\nThis cannot be undone. An item that has stock or history cannot be deleted. Deactivate it instead.');
 
 /* ---------- Count verification (master / admin) ---------- */
 async function refreshBadge(){
