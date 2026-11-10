@@ -370,9 +370,9 @@ function entryDialog(type, shelf, products, stockMap, dests){
       const p = cur(); const bal = p ? (stockMap[p.id] || 0) : 0;
       if (!p) { $('#eBal').textContent = 'Select a product.'; $('#eTot').textContent = ''; return; }
       const tot = parseInt(pcs.value, 10) || 0;
-      $('#eBal').textContent = 'Current balance on this shelf: ' + bal + ' pcs.';
+      $('#eBal').textContent = isAdmin() ? 'Current balance on this shelf: ' + bal + ' pcs.' : '';
       const after = type === 'in' ? bal + tot : (type === 'out' || type === 'transfer') ? bal - tot : tot;
-      $('#eTot').textContent = TYPE_HINT[type] + ' Entry: ' + tot + ' pcs. New balance: ' + after + ' pcs.';
+      $('#eTot').textContent = TYPE_HINT[type] + ' Entry: ' + tot + ' pcs.' + (isAdmin() ? ' New balance: ' + after + ' pcs.' : '');
     };
     const fill = () => {
       const t = q.value.trim().toLowerCase(), keep = sel.value;
@@ -506,8 +506,8 @@ async function renderShelf(el){
       ${isAdmin() ? '<button class="btn opn" data-ty="opening">Opening balance</button>' : ''}
     </div>
     <button class="btn light" data-ty="bincard" style="width:100%;margin-bottom:14px">Open Bin Card (full journey of this shelf)</button>
-    <h3 class="cat">Current stock</h3>
-    ${rows.length ? `<div class="scroll"><table><thead><tr><th>Code</th><th>Product</th><th class="n">Qty (pcs)</th></tr></thead><tbody>
+    ${isAdmin() ? '<h3 class="cat">Current stock</h3>' : ''}
+    ${!isAdmin() ? '<div class="hint" style="margin-top:14px">Stock quantities are visible to master and admin only. Use Physical count to record what you see on the shelf.</div>' : rows.length ? `<div class="scroll"><table><thead><tr><th>Code</th><th>Product</th><th class="n">Qty (pcs)</th></tr></thead><tbody>
     ${rows.map(r => `<tr><td>${esc(r.products.code)}</td><td>${esc(r.products.name)}</td><td class="n">${r.qty_pcs}</td></tr>`).join('')}
     </tbody></table></div>` : '<div class="empty">No stock on this shelf yet.</div>'}`;
   $('#bk').onclick = () => go({ t: 'shelves', wh });
@@ -601,7 +601,7 @@ function writeOffDialog(shelf, list, stockMap){
     <label>Quantity (pcs)</label><input type="number" data-n min="1" step="1" inputmode="numeric">
     <label>Details (required for Other)</label><textarea data-t rows="2" maxlength="200"></textarea>
     <div class="hint">Removes the quantity from the shelf balance. It is recorded as a write-off and shown separately in reports, not as an issue to a location.</div>`, 'Record write-off', api => {
-    const pk = bindPick(api, p => 'Current balance on this shelf: ' + (stockMap[p.id] || 0) + ' pcs.'); pk.set(list);
+    const pk = bindPick(api, p => isAdmin() ? 'Current balance on this shelf: ' + (stockMap[p.id] || 0) + ' pcs.' : ''); pk.set(list);
     api.run(async () => {
       const pid = pk.val(), n = parseInt(api.q('[data-n]').value, 10) || 0, r = api.q('[data-r]').value, t = api.q('[data-t]').value.trim();
       if (!pid) return 'Select a product.';
@@ -793,15 +793,15 @@ async function renderBinCard(el){
       <div><b>Warehouse :</b> ${esc(wh.name)}<br><b>Shelf No :</b> ${esc(shelf.name)}</div>
       <div><b>Bin Card :</b> Shelf ${esc(shelf.name)}<small>${esc(bcRange.from)} to ${esc(bcRange.to)}</small></div>
     </div>
-    ${rows.length ? `<div class="scroll"><table class="bc"><thead><tr><th>Date</th><th>Time</th><th>Product Name</th><th class="n">Opening Qty</th><th>Department / Supplier / Location</th><th>Issue No</th><th class="n">Issued Qty (Transfer)</th><th class="n">Received Qty (Stock in)</th><th class="n">Closing Qty</th><th>Concern Person</th><th>Audit Person</th>${isAdmin() ? '<th class="noprint">Action</th>' : ''}</tr></thead><tbody>
+    ${rows.length ? `<div class="scroll"><table class="bc"><thead><tr><th>Date</th><th>Time</th><th>Product Name</th>${isAdmin() ? '<th class="n">Opening Qty</th>' : ''}<th>Department / Supplier / Location</th><th>Issue No</th><th class="n">Issued Qty (Transfer)</th><th class="n">Received Qty (Stock in)</th>${isAdmin() ? '<th class="n">Closing Qty</th>' : ''}<th>Concern Person</th><th>Audit Person</th>${isAdmin() ? '<th class="noprint">Action</th>' : ''}</tr></thead><tbody>
       ${rows.map(x => { const per = x.pcs_per_carton || 1, isOut = x.entry_type === 'out', isIn = x.entry_type === 'in';
         const m = mt(x), nt = noteShown(x), n1 = x.note || '';
         const rvOk = isAdmin() && m && !m.reversed && !m.is_reversal && (x.entry_type === 'in' || x.entry_type === 'out') && (!/^Transfer (to|from)/.test(n1) || /^Transfer to location:/.test(n1));
         return `<tr class="${m && (m.reversed || m.is_reversal) ? 'rv' : ''}"><td>${esc(fmtD(x.entry_time))}</td><td>${esc(fmtT(x.entry_time))}</td><td class="w">${esc(x.product_code)} - ${esc(x.product_name)}</td>
-        <td class="n">${qtyCell(x.balance_before, per)}</td>
+        ${isAdmin() ? `<td class="n">${qtyCell(x.balance_before, per)}</td>` : ''}
         <td class="w">${esc(partyOf(x))}${badgesFor(x, m)}${nt ? `<small>${esc(nt)}</small>` : ''}</td><td>${esc(x.issue_no || '')}</td>
         <td class="n">${isOut ? qtyCell(x.total_pcs, per) : ''}</td><td class="n">${isIn ? qtyCell(x.total_pcs, per) : ''}</td>
-        <td class="n"><b>${qtyCell(x.balance_after, per)}</b></td>
+        ${isAdmin() ? `<td class="n"><b>${qtyCell(x.balance_after, per)}</b></td>` : ''}
         <td class="w">${esc(x.concern_name || '')}</td><td class="w">${x.audit_name ? esc(x.audit_name) + `<small>${esc(fmtD(x.audit_time))}</small>` : ''}</td>${isAdmin() ? `<td class="noprint">${rvOk ? `<button class="btn ghost" data-rv="${esc(m.entry_id)}" style="color:var(--err);padding:4px 8px;font-size:12px">Reverse</button>` : ''}</td>` : ''}</tr>`; }).join('')}
       </tbody></table></div>${all.length >= 1000 ? '<div class="hint noprint">Showing the latest 1000 entries of this period. Narrow the dates to see earlier entries.</div>' : ''}`
       : '<div class="empty">No entries in the selected dates.</div>'}
@@ -821,8 +821,8 @@ async function renderBinCard(el){
     if (!rows.length) return toast('No entries to download.');
     const q = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
     const head = ['Date', 'Time', 'Product Name', 'Opening Qty', 'Department/Supplier/Location', 'Issue No', 'Issued Qty', 'Received Qty', 'Closing Qty', 'Concern Person', 'Audit Person', 'Note'];
-    const lines = rows.map(x => [fmtD(x.entry_time), fmtT(x.entry_time), x.product_code + ' - ' + x.product_name, x.balance_before, partyOf(x), x.issue_no || '',
-      x.entry_type === 'out' ? x.total_pcs : '', x.entry_type === 'in' ? x.total_pcs : '', x.balance_after, x.concern_name || '', x.audit_name || '', x.note || ''].map(q).join(','));
+    const lines = rows.map(x => [fmtD(x.entry_time), fmtT(x.entry_time), x.product_code + ' - ' + x.product_name, isAdmin() ? x.balance_before : '', partyOf(x), x.issue_no || '',
+      x.entry_type === 'out' ? x.total_pcs : '', x.entry_type === 'in' ? x.total_pcs : '', isAdmin() ? x.balance_after : '', x.concern_name || '', x.audit_name || '', x.note || ''].map(q).join(','));
     const blob = new Blob(['\ufeff' + [head.map(q).join(',')].concat(lines).join('\r\n')], { type: 'text/csv;charset=utf-8' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
     a.download = 'BinCard_' + wh.name.replace(/[^\w]+/g, '_') + '_Shelf_' + shelf.name.replace(/[^\w]+/g, '_') + '_' + bcRange.from + '_to_' + bcRange.to + '.csv'; a.click();
