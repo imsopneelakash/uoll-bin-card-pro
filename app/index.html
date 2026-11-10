@@ -60,7 +60,7 @@ dialog .row{margin:16px 0 0;justify-content:flex-end}
 .login-logo{display:block;width:150px;margin:0 auto 8px}
 .login-box h1,.login-box p{text-align:center}
 .tabs{display:flex;max-width:640px;margin:0 auto;padding:0 16px;gap:6px;border-bottom:1px solid var(--line)}
-.tabs button{background:none;border:0;padding:12px 14px;font-weight:600;color:var(--mut);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-1px}
+.tabs{overflow-x:auto}.tabs button{white-space:nowrap;background:none;border:0;padding:12px 14px;font-weight:600;color:var(--mut);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-1px}
 .tabs button.on{color:var(--pri);border-bottom-color:var(--pri)}
 input[type=search],input[type=number],input[type=date],input[type=text],select{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:#fbfdfb}
 .row input,.row select{flex:1;min-width:0}
@@ -121,7 +121,7 @@ table.bc small{display:block;color:var(--mut);font-size:11px}
     <span class="role" id="roleTag"></span>
     <button class="btn ghost" id="logout">Sign out</button>
   </div></header>
-  <nav class="tabs"><button data-tab="wh" class="on">Warehouses</button><button data-tab="prod">Products</button><button data-tab="loc">Locations</button></nav>
+  <nav class="tabs"><button data-tab="wh" class="on">Warehouses</button><button data-tab="prod">Products</button><button data-tab="loc">Locations</button><button data-tab="users" id="tabUsers" class="hidden">Users</button></nav>
   <main class="wrap" id="view"></main>
 </section>
 
@@ -149,6 +149,22 @@ table.bc small{display:block;color:var(--mut);font-size:11px}
     <div class="row">
       <button class="btn light" value="cancel" formnovalidate>Cancel</button>
       <button class="btn" value="ok">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="udlg">
+  <form id="uForm">
+    <h3 id="uTitle"></h3>
+    <label for="uName">Full name</label><input type="text" id="uName" maxlength="80" autocomplete="off">
+    <label for="uEmail">Email</label><input type="text" id="uEmail" inputmode="email" autocomplete="off">
+    <label for="uPass" id="uPassL">Password</label><input type="text" id="uPass" autocomplete="new-password" placeholder="At least 8 characters">
+    <label for="uRole">Role</label><select id="uRole"></select>
+    <div class="hint" id="uHint"></div>
+    <div class="err" id="uErr" role="alert"></div>
+    <div class="row">
+      <button type="button" class="btn light" id="uCancel">Cancel</button>
+      <button type="submit" class="btn" id="uSave">Save</button>
     </div>
   </form>
 </dialog>
@@ -229,6 +245,7 @@ async function enter(){
   me = data;
   $('#whoSub').textContent = me.full_name || me.email || '';
   $('#roleTag').textContent = me.role;
+  $('#tabUsers').classList.toggle('hidden', !isAdmin());
   $('#login').classList.add('hidden'); $('#app').classList.remove('hidden');
   view = { t: 'wh' }; render();
 }
@@ -243,7 +260,7 @@ $('#loginForm').addEventListener('submit', async e => {
 $('#logout').addEventListener('click', async () => { await db.auth.signOut(); me = null; showLogin(); });
 
 /* ---------- Views ---------- */
-function go(v){ view = v; document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === (v.t === 'prod' ? 'prod' : (v.t === 'loc' || v.t === 'locdetail') ? 'loc' : 'wh'))); render(); window.scrollTo(0, 0); }
+function go(v){ view = v; document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === (v.t === 'prod' ? 'prod' : (v.t === 'loc' || v.t === 'locdetail') ? 'loc' : v.t === 'users' ? 'users' : 'wh'))); render(); window.scrollTo(0, 0); }
 async function render(){
   const el = $('#view');
   el.style.maxWidth = view.t === 'bincard' ? '1400px' : '';
@@ -252,6 +269,7 @@ async function render(){
     if (view.t === 'wh') await renderWarehouses(el);
     else if (view.t === 'prod') await renderProducts(el);
     else if (view.t === 'loc') await renderLocations(el);
+    else if (view.t === 'users') await renderUsers(el);
     else if (view.t === 'locdetail') await renderLocationDetail(el);
     else if (view.t === 'shelves') await renderShelves(el);
     else if (view.t === 'count') await renderCount(el);
@@ -667,6 +685,77 @@ async function renderBinCard(el){
     if (e) return toast(e.message || 'Could not mark entries as audited.');
     toast(n + ' entries marked as audited.'); render();
   };
+}
+
+/* ---------- Users (master / admin) ---------- */
+const ROLE_LABEL = { master: 'Master', admin: 'Admin', employee: 'Employee' };
+async function callUsers(body){
+  const { data, error } = await db.functions.invoke('manage-users', { body });
+  if (error) {
+    let m = 'The user service is not available. Check that the manage-users function is deployed.';
+    try { const j = await error.context.json(); if (j && j.error) m = j.error; } catch (e) {}
+    throw new Error(m);
+  }
+  if (data && data.error) throw new Error(data.error);
+  return data;
+}
+
+function userDialog(mode, u){
+  return new Promise(res => {
+    const d = $('#udlg'), err = $('#uErr'), save = $('#uSave'), roleSel = $('#uRole');
+    const edit = mode === 'edit';
+    $('#uTitle').textContent = edit ? 'Edit user' : 'Add user';
+    $('#uName').value = edit ? (u.full_name || '') : '';
+    $('#uEmail').value = edit ? u.email : ''; $('#uEmail').disabled = edit;
+    $('#uPass').value = ''; $('#uPassL').textContent = edit ? 'New password (leave empty to keep the current one)' : 'Password';
+    const roles = me.role === 'master' ? ['employee', 'admin', 'master'] : ['employee'];
+    roleSel.innerHTML = roles.map(r => `<option value="${r}">${ROLE_LABEL[r]}</option>`).join('');
+    roleSel.value = edit && roles.includes(u.role) ? u.role : 'employee';
+    $('#uHint').textContent = edit ? 'Share a new password with the user directly.' : 'Share this email and password with the user directly.';
+    err.textContent = ''; save.disabled = false; save.textContent = 'Save';
+    $('#uCancel').onclick = () => d.close();
+    $('#uForm').onsubmit = async e => {
+      e.preventDefault(); err.textContent = '';
+      const name = $('#uName').value.trim(), email = $('#uEmail').value.trim().toLowerCase(), pass = $('#uPass').value;
+      if (!name) { err.textContent = 'Enter the full name.'; return; }
+      if (!edit && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { err.textContent = 'Enter a valid email address.'; return; }
+      if ((!edit || pass) && pass.length < 8) { err.textContent = 'Password must be at least 8 characters.'; return; }
+      save.disabled = true; save.textContent = 'Saving...';
+      try {
+        if (edit) {
+          const body = { action: 'update', id: u.id, full_name: name, role: roleSel.value };
+          if (pass) body.password = pass;
+          await callUsers(body);
+        } else {
+          await callUsers({ action: 'create', full_name: name, email, password: pass, role: roleSel.value });
+        }
+        d.close('ok');
+      } catch (x) { err.textContent = x.message; save.disabled = false; save.textContent = 'Save'; }
+    };
+    d.onclose = () => res(d.returnValue === 'ok');
+    d.returnValue = ''; d.showModal();
+  });
+}
+
+async function renderUsers(el){
+  if (!isAdmin()) { el.innerHTML = '<div class="empty">You do not have access to this page.</div>'; return; }
+  const r = await callUsers({ action: 'list' });
+  const users = r.users || [];
+  const byId = Object.fromEntries(users.map(x => [x.id, x]));
+  el.innerHTML = `<div class="crumb"><h2>Users</h2><button class="btn" id="addUser">Add user</button></div>
+    <div class="list">${users.length ? users.map(x => `<div class="item ${x.is_active ? '' : 'off'}" style="cursor:default">
+      <span class="grow"><b>${esc(x.full_name || x.email)}</b><span class="sub">${esc(x.email || '')} &middot; ${esc(ROLE_LABEL[x.role] || x.role)}${x.id === me.id ? ' &middot; You' : ''}</span></span>
+      ${x.is_active ? '' : '<span class="tag">Deactivated</span>'}
+      ${x.can_manage ? `<button class="btn ghost" data-ed="${x.id}" style="color:var(--pri)">Edit</button><button class="btn ghost" data-tg="${x.id}" style="color:var(--pri)">${x.is_active ? 'Deactivate' : 'Activate'}</button>` : ''}</div>`).join('') : '<div class="empty">No users found.</div>'}</div>
+    <div class="hint">${me.role === 'master' ? 'Master can manage admin and employee accounts.' : 'Admin can manage employee accounts.'} A deactivated user cannot sign in.</div>`;
+  $('#addUser').onclick = async () => { if (await userDialog('add')) { toast('User created.'); render(); } };
+  el.querySelectorAll('[data-ed]').forEach(b => b.onclick = async () => { if (await userDialog('edit', byId[b.dataset.ed])) { toast('User updated.'); render(); } });
+  el.querySelectorAll('[data-tg]').forEach(b => b.onclick = async () => {
+    const x = byId[b.dataset.tg], on = !x.is_active;
+    if (!confirm((on ? 'Activate ' : 'Deactivate ') + (x.full_name || x.email) + '?')) return;
+    try { await callUsers({ action: 'update', id: x.id, is_active: on }); toast(on ? 'User activated.' : 'User deactivated.'); render(); }
+    catch (e) { toast(e.message); }
+  });
 }
 
 /* ---------- Products ---------- */
