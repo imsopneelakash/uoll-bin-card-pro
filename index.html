@@ -3,633 +3,86 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#1e7a3c">
-<title>UOLL Bin Card Pro</title>
+<meta name="theme-color" content="#14582a">
+<title>UOLL Bin Card Pro - Download for Android</title>
+<meta name="description" content="Bin Card Pro by Ultimate Organic Life: shelf-wise bin cards, transfers to locations and blind physical counts. Download the Android app.">
+<link rel="icon" href="assets/logo.png">
 <style>
-:root{--bg:#f1f7f3;--card:#fff;--ink:#16251b;--mut:#62736a;--pri:#1e7a3c;--pri-d:#14582a;--acc:#1fa3c8;--line:#d6e0d7;--err:#b3261e}
 *{box-sizing:border-box;margin:0}
-html,body{height:100%}
-body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);font-size:16px;line-height:1.45;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
-button,input{font:inherit}
-.hidden{display:none!important}
-.wrap{max-width:640px;margin:0 auto;padding:0 16px 40px}
-header.bar{background:var(--pri);color:#fff;padding:14px 16px;position:sticky;top:0;z-index:5;border-bottom:3px solid var(--acc)}
-.bar-in{max-width:640px;margin:0 auto;display:flex;align-items:center;gap:12px}
-.bar h1{font-size:18px;font-weight:700;flex:1;letter-spacing:.2px}
-.bar small{display:block;font-size:12px;opacity:.8;font-weight:400}
-.role{background:var(--acc);color:#fff;border-radius:99px;padding:2px 10px;font-size:12px;font-weight:700;text-transform:capitalize}
-.btn{border:0;border-radius:10px;padding:11px 16px;font-weight:600;cursor:pointer;background:var(--pri);color:#fff}
-.btn:hover{background:var(--pri-d)}
-.btn.ghost{background:transparent;color:inherit;border:1px solid currentColor;padding:6px 12px;font-size:14px}
-.btn.light{background:#fff;color:var(--pri);border:1px solid var(--line)}
-:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
-.crumb{display:flex;align-items:center;gap:8px;margin:18px 0 12px}
-.crumb h2{font-size:20px;flex:1}
-.back{background:none;border:0;color:var(--pri);font-weight:600;cursor:pointer;padding:6px 0}
-.list{display:grid;gap:10px}
-.item{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--pri);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px;width:100%;text-align:left;cursor:pointer;color:inherit}
-.item.off{border-left-color:var(--mut);opacity:.7}
-.item b{display:block}
-.item span.sub{color:var(--mut);font-size:14px}
-.item .grow{flex:1}
-.tag{font-size:12px;background:#e8eee9;color:var(--mut);border-radius:6px;padding:2px 8px}
-.empty{background:var(--card);border:1px dashed var(--line);border-radius:12px;padding:28px 16px;text-align:center;color:var(--mut)}
-.row{display:flex;gap:8px;margin-bottom:12px}
-table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;font-size:15px}
-th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line)}
-th{background:#e8eee9;font-size:13px;color:var(--mut)}
-td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
-.scroll{overflow-x:auto}
-#login{min-height:100%;display:grid;place-items:center;padding:20px}
-.login-box{background:var(--card);border-radius:16px;border:1px solid var(--line);padding:28px 22px;width:100%;max-width:380px;border-top:6px solid var(--pri)}
-.login-box h1{font-size:24px;color:var(--pri)}
-.login-box p{color:var(--mut);margin:4px 0 20px}
-label{display:block;font-size:14px;font-weight:600;margin:12px 0 4px}
-input[type=email],input[type=password],input[type=text]{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:#fbfdfb}
-.err{color:var(--err);font-size:14px;margin-top:12px;min-height:20px}
-.login-box .btn{width:100%;margin-top:16px}
-dialog{border:0;border-radius:14px;padding:20px;width:min(90vw,380px)}
-dialog::backdrop{background:rgba(10,30,15,.5)}
-dialog h3{margin-bottom:10px}
-dialog .row{margin:16px 0 0;justify-content:flex-end}
-#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#16251b;color:#fff;padding:10px 16px;border-radius:10px;font-size:14px;z-index:20;max-width:90vw}
-.logo{width:40px;height:40px;border-radius:50%;background:#fff;object-fit:contain}
-.login-logo{display:block;width:150px;margin:0 auto 8px}
-.login-box h1,.login-box p{text-align:center}
-.tabs{display:flex;max-width:640px;margin:0 auto;padding:0 16px;gap:6px;border-bottom:1px solid var(--line)}
-.tabs button{background:none;border:0;padding:12px 14px;font-weight:600;color:var(--mut);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-1px}
-.tabs button.on{color:var(--pri);border-bottom-color:var(--pri)}
-input[type=search],input[type=number],input[type=date],select{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:#fbfdfb}
-.row input,.row select{flex:1;min-width:0}
-.cat{font-size:15px;color:var(--pri);margin:20px 0 8px}
-.chk{display:flex;align-items:center;gap:8px}
-.item.ro{cursor:default}
-dialog{max-height:90vh;overflow:auto}
-
-.acts{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:14px}
-.acts .btn.in{background:#1e7a3c}.acts .btn.out{background:#b3261e}.acts .btn.cnt{background:#1fa3c8}.acts .btn.opn{background:#4f5d54}
-.sum{display:grid;gap:8px;margin-bottom:6px}
-.sumc{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--acc);border-radius:12px;padding:12px 16px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
-.hint{font-size:13px;color:var(--mut);margin-top:6px}
-.two{display:flex;gap:8px}.two>div{flex:1;min-width:0}
-textarea{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:#fbfdfb;font:inherit;resize:vertical}
-.badge{font-size:12px;font-weight:700;border-radius:6px;padding:2px 8px;color:#fff;white-space:nowrap}
-.b-in{background:#1e7a3c}.b-out{background:#b3261e}.b-count{background:#1fa3c8}.b-opening{background:#4f5d54}
-.ci{width:74px!important;padding:8px!important}
-.b-ok{background:#1e7a3c}.b-bad{background:#b3261e}.b-none{background:#8a968e}
-.cbar{position:sticky;bottom:0;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin-top:14px;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+:root{--pri:#1e7a3c;--pri-d:#14582a;--acc:#1fa3c8}
+html,body{min-height:100%}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#fff;line-height:1.5;background:#0d2a17}
+.hero{min-height:100vh;min-height:100svh;display:flex;flex-direction:column;
+  background:linear-gradient(115deg,rgba(8,36,18,.92) 0%,rgba(14,70,36,.78) 45%,rgba(8,36,18,.45) 100%),url(assets/hero.jpg) center/cover no-repeat;
+  padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+.nav{display:flex;align-items:center;gap:12px;padding:20px clamp(20px,6vw,80px)}
+.nav img{width:44px;height:44px;border-radius:50%;background:#fff;padding:2px}
+.nav b{font-size:17px;letter-spacing:.2px}
+.nav small{display:block;opacity:.8;font-size:12px;font-weight:400}
+main{flex:1;display:flex;align-items:center;padding:20px clamp(20px,6vw,80px) 40px}
+.wrap{max-width:640px}
+.pill{display:inline-block;background:rgba(31,163,200,.2);border:1px solid rgba(31,163,200,.6);color:#bdeeff;border-radius:99px;padding:4px 14px;font-size:13px;font-weight:600;margin-bottom:18px}
+h1{font-size:clamp(34px,6vw,60px);line-height:1.08;font-weight:800;letter-spacing:-.5px}
+h1 span{color:#7fe0a0}
+p.lead{font-size:clamp(16px,2.2vw,19px);margin:18px 0 28px;color:#e4f2e9;max-width:540px}
+.cta{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.btn{display:inline-flex;align-items:center;gap:10px;border-radius:14px;padding:16px 28px;font-size:17px;font-weight:700;text-decoration:none;transition:transform .15s,background .15s}
+.btn.main{background:#fff;color:var(--pri-d);box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.btn.main:hover{transform:translateY(-2px);background:#eafaf0}
+.btn.ghost{border:1.5px solid rgba(255,255,255,.65);color:#fff}
+.btn.ghost:hover{background:rgba(255,255,255,.12)}
+.btn:focus-visible{outline:3px solid var(--acc);outline-offset:3px}
+.note{margin-top:14px;font-size:13px;color:#cfe4d6}
+.feat{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-top:40px;max-width:760px}
+.feat div{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border-radius:14px;padding:14px 16px}
+.feat b{display:block;font-size:15px;margin-bottom:2px}
+.feat span{font-size:13px;color:#d6e8dc}
+details{margin-top:22px;max-width:520px;background:rgba(0,0,0,.28);border-radius:12px;padding:12px 16px;font-size:14px}
+summary{cursor:pointer;font-weight:600}
+ol{margin:10px 0 0 20px;color:#e0eee5}
+li{margin:4px 0}
+footer{padding:16px clamp(20px,6vw,80px) 24px;font-size:12px;color:#b9d2c1}
+@media (max-width:520px){.btn{width:100%;justify-content:center}}
+@media (prefers-reduced-motion:reduce){.btn{transition:none}}
 </style>
 </head>
 <body>
-
-<section id="login" class="hidden">
-  <form class="login-box" id="loginForm">
-    <img class="login-logo" alt="Ultimate Organic Life" src="data:image/jpeg;base64,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">
-    <h1>UOLL Bin Card Pro</h1>
-    <p>Sign in to manage warehouse bin cards.</p>
-    <label for="em">Email</label>
-    <input id="em" type="email" autocomplete="username" required>
-    <label for="pw">Password</label>
-    <input id="pw" type="password" autocomplete="current-password" required>
-    <div class="err" id="loginErr" role="alert"></div>
-    <button class="btn" id="loginBtn" type="submit">Sign in</button>
-  </form>
-</section>
-
-<section id="app" class="hidden">
-  <header class="bar"><div class="bar-in">
-    <img class="logo" alt="" src="data:image/jpeg;base64,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">
-    <h1 id="who">Bin Card Pro<small id="whoSub"></small></h1>
-    <span class="role" id="roleTag"></span>
-    <button class="btn ghost" id="logout">Sign out</button>
-  </div></header>
-  <nav class="tabs"><button data-tab="wh" class="on">Warehouses</button><button data-tab="prod">Products</button><button data-tab="loc">Locations</button></nav>
-  <main class="wrap" id="view"></main>
-</section>
-
-<dialog id="pdlg">
-  <form method="dialog">
-    <h3 id="pTitle"></h3>
-    <label for="pCode">Code</label><input type="text" id="pCode" required maxlength="30">
-    <label for="pName">Product name</label><input type="text" id="pName" required maxlength="200">
-    <label for="pCat">Category</label><select id="pCat"></select>
-    <input type="text" id="pCatNew" class="hidden" maxlength="60" placeholder="New category name" aria-label="New category name" style="margin-top:8px">
-    <label for="pMrp">MRP (BDT)</label><input type="number" id="pMrp" min="0" step="0.01" required>
-    <label for="pPer">Pieces per carton</label><input type="number" id="pPer" min="1" step="1" required>
-    <label class="chk" style="margin-top:14px"><input type="checkbox" id="pAct"> Active</label>
-    <div class="row">
-      <button class="btn light" value="cancel" formnovalidate>Cancel</button>
-      <button class="btn" value="ok">Save</button>
-    </div>
-  </form>
-</dialog>
-
-<dialog id="dlg">
-  <form method="dialog" id="dlgForm">
-    <h3 id="dlgTitle"></h3>
-    <input type="text" id="dlgInput" required maxlength="80">
-    <div class="row">
-      <button class="btn light" value="cancel" formnovalidate>Cancel</button>
-      <button class="btn" value="ok">Save</button>
-    </div>
-  </form>
-</dialog>
-
-<dialog id="edlg">
-  <form id="eForm">
-    <h3 id="eTitle"></h3>
-    <label for="eQ">Product</label>
-    <input type="search" id="eQ" placeholder="Search by name or code" autocomplete="off">
-    <select id="eProd" size="5" style="margin-top:6px" aria-label="Select product"></select>
-    <div class="hint" id="eBal"></div>
-    <div id="eDest" class="hidden">
-      <label for="eDT">Transfer to</label><select id="eDT"></select>
-      <div id="eLoc"><label for="eLS">Location</label><select id="eLS"></select></div>
-      <div id="eShelfDest">
-        <label for="eDW">Destination warehouse</label><select id="eDW"></select>
-        <label for="eDS">Destination shelf</label><select id="eDS"></select>
+<div class="hero">
+  <div class="nav"><img src="assets/logo.png" alt="Ultimate Organic Life logo"><b>Ultimate Organic Life<small>Warehouse &amp; Inventory</small></b></div>
+  <main>
+    <div class="wrap">
+      <span class="pill">Android app</span>
+      <h1>Bin Card <span>Pro</span></h1>
+      <p class="lead">Track every shelf, transfer and count across our warehouses and locations, from your phone.</p>
+      <div class="cta">
+        <a class="btn main" id="dl" href="#" download>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 21h16"/></svg>
+          Download APK
+        </a>
+        <a class="btn ghost" href="app/">Open web app</a>
       </div>
+      <p class="note">For Android 7.0 or later. The app is for UOLL staff only and needs a login.</p>
+      <div class="feat">
+        <div><b>Shelf-wise bin cards</b><span>Stock in, transfers and opening balance</span></div>
+        <div><b>Location transfers</b><span>Outlets, stores and more, with reports</span></div>
+        <div><b>Blind physical count</b><span>Count first, match against the system</span></div>
+      </div>
+      <details>
+        <summary>How to install</summary>
+        <ol>
+          <li>Tap <b>Download APK</b> and open the downloaded file.</li>
+          <li>If Android asks, allow <b>Install unknown apps</b> for your browser.</li>
+          <li>Tap <b>Install</b>, open Bin Card Pro and sign in.</li>
+        </ol>
+      </details>
     </div>
-    <div class="two">
-      <div><label for="eCtn">Cartons</label><input type="number" id="eCtn" min="0" step="1" value="0"></div>
-      <div><label for="ePcs">Loose pcs</label><input type="number" id="ePcs" min="0" step="1" value="0"></div>
-    </div>
-    <div class="hint" id="eTot"></div>
-    <label for="eNote">Note (optional)</label>
-    <textarea id="eNote" rows="2" maxlength="300"></textarea>
-    <div class="err" id="eErr" role="alert"></div>
-    <div class="row">
-      <button type="button" class="btn light" id="eCancel">Cancel</button>
-      <button type="submit" class="btn" id="eSave">Save entry</button>
-    </div>
-  </form>
-</dialog>
-
-<div id="toast" class="hidden" role="status"></div>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  </main>
+  <footer>&copy; Ultimate Organic Life Ltd</footer>
+</div>
 <script>
-const SUPABASE_URL = 'https://dpyjtkeduobidspprbrv.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_fxp9DGFh-uv3uI2u__U9oA_CfiktC_w';
-const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-const $ = s => document.querySelector(s);
-const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let me = null;
-let view = { t: 'wh' };
-
-function toast(msg){
-  const t = $('#toast'); t.textContent = msg; t.classList.remove('hidden');
-  clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.add('hidden'), 3200);
-}
-function askName(title, value = ''){
-  return new Promise(res => {
-    const d = $('#dlg'); $('#dlgTitle').textContent = title; $('#dlgInput').value = value;
-    d.onclose = () => res(d.returnValue === 'ok' ? $('#dlgInput').value.trim() : null);
-    d.showModal(); $('#dlgInput').focus();
-  });
-}
-const isAdmin = () => me && (me.role === 'master' || me.role === 'admin');
-
-/* ---------- Auth ---------- */
-async function boot(){
-  const { data } = await db.auth.getSession();
-  if (data.session) await enter(); else showLogin();
-}
-function showLogin(msg = ''){
-  $('#app').classList.add('hidden'); $('#login').classList.remove('hidden');
-  $('#loginErr').textContent = msg; $('#pw').value = '';
-}
-async function enter(){
-  const { data: u } = await db.auth.getUser();
-  if (!u.user) return showLogin();
-  const { data, error } = await db.from('profiles').select('*').eq('id', u.user.id).single();
-  if (error || !data) { await db.auth.signOut(); return showLogin('Your profile could not be loaded. Contact the administrator.'); }
-  if (!data.is_active) { await db.auth.signOut(); return showLogin('This account is deactivated. Contact the administrator.'); }
-  me = data;
-  $('#whoSub').textContent = me.full_name || me.email || '';
-  $('#roleTag').textContent = me.role;
-  $('#login').classList.add('hidden'); $('#app').classList.remove('hidden');
-  view = { t: 'wh' }; render();
-}
-$('#loginForm').addEventListener('submit', async e => {
-  e.preventDefault();
-  const b = $('#loginBtn'); b.disabled = true; b.textContent = 'Signing in...';
-  const { error } = await db.auth.signInWithPassword({ email: $('#em').value.trim(), password: $('#pw').value });
-  b.disabled = false; b.textContent = 'Sign in';
-  if (error) return showLogin('Sign-in failed. Check your email and password.');
-  await enter();
-});
-$('#logout').addEventListener('click', async () => { await db.auth.signOut(); me = null; showLogin(); });
-
-/* ---------- Views ---------- */
-function go(v){ view = v; document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === (v.t === 'prod' ? 'prod' : (v.t === 'loc' || v.t === 'locdetail') ? 'loc' : 'wh'))); render(); window.scrollTo(0, 0); }
-async function render(){
-  const el = $('#view');
-  el.innerHTML = '<div class="empty">Loading...</div>';
-  try {
-    if (view.t === 'wh') await renderWarehouses(el);
-    else if (view.t === 'prod') await renderProducts(el);
-    else if (view.t === 'loc') await renderLocations(el);
-    else if (view.t === 'locdetail') await renderLocationDetail(el);
-    else if (view.t === 'shelves') await renderShelves(el);
-    else if (view.t === 'count') await renderCount(el);
-    else await renderShelf(el);
-  } catch (err) {
-    el.innerHTML = '<div class="empty">Could not load data. Check your connection and try again.</div>';
-  }
-}
-
-async function renderWarehouses(el){
-  const { data, error } = await db.from('warehouses').select('*').order('name');
-  if (error) throw error;
-  const rows = (data || []).filter(w => isAdmin() || w.is_active);
-  let sumHtml = '';
-  if (isAdmin()) {
-    const { data: sm, error: se } = await db.rpc('inventory_summary');
-    if (!se && sm) sumHtml = '<h3 class="cat">Inventory summary</h3><div class="sum">' + sm.map(x => `<div class="sumc"><b>${esc(x.warehouse_name)}</b><span>${Number(x.total_pcs).toLocaleString('en-US')} pcs &middot; &#2547; ${Number(x.total_value).toLocaleString('en-US', { maximumFractionDigits: 0 })}</span></div>`).join('') + '</div>';
-  }
-  el.innerHTML = `<div class="crumb"><h2>Warehouses</h2>${isAdmin() ? '<button class="btn" id="addWh">Add warehouse</button>' : ''}</div>
-    <div class="list">${rows.length ? rows.map(w => `<button class="item ${w.is_active ? '' : 'off'}" data-id="${w.id}" data-name="${esc(w.name)}">
-      <span class="grow"><b>${esc(w.name)}</b><span class="sub">Tap to view shelves</span></span>${w.is_active ? '' : '<span class="tag">Inactive</span>'}</button>`).join('')
-      : '<div class="empty">No warehouses yet. Add the first warehouse to get started.</div>'}</div>${sumHtml}`;
-  el.querySelectorAll('.item').forEach(b => b.onclick = () => go({ t: 'shelves', wh: { id: b.dataset.id, name: b.dataset.name } }));
-  const add = $('#addWh');
-  if (add) add.onclick = async () => {
-    const name = await askName('New warehouse name'); if (!name) return;
-    const { error } = await db.from('warehouses').insert({ name });
-    if (error) toast(error.code === '23505' ? 'A warehouse with this name already exists.' : 'Could not add the warehouse.');
-    else { toast('Warehouse added.'); render(); }
-  };
-}
-
-async function renderShelves(el){
-  const wh = view.wh;
-  const { data, error } = await db.from('shelves').select('*').eq('warehouse_id', wh.id).order('name');
-  if (error) throw error;
-  const rows = (data || []).filter(s => isAdmin() || s.is_active);
-  el.innerHTML = `<button class="back" id="bk">&larr; Warehouses</button>
-    <div class="crumb"><h2>${esc(wh.name)}</h2>${isAdmin() ? '<button class="btn" id="addSh">Add shelf</button>' : ''}</div>
-    <div class="list">${rows.length ? rows.map(s => `<div class="item ${s.is_active ? '' : 'off'}" style="cursor:default">
-      <button class="grow back" style="text-align:left;color:inherit" data-id="${s.id}" data-name="${esc(s.name)}"><b>Shelf ${esc(s.name)}</b><span class="sub">View stock on this shelf</span></button>
-      ${s.is_active ? '' : '<span class="tag">Inactive</span>'}
-      ${isAdmin() ? `<button class="btn ghost" data-tg="${s.id}" data-on="${s.is_active}" style="color:var(--pri)">${s.is_active ? 'Deactivate' : 'Activate'}</button>` : ''}</div>`).join('')
-      : '<div class="empty">No shelves in this warehouse yet.' + (isAdmin() ? ' Add the first shelf.' : '') + '</div>'}</div>`;
-  $('#bk').onclick = () => go({ t: 'wh' });
-  el.querySelectorAll('button[data-name]').forEach(b => b.onclick = () => go({ t: 'shelf', wh, shelf: { id: b.dataset.id, name: b.dataset.name } }));
-  el.querySelectorAll('button[data-tg]').forEach(b => b.onclick = async () => {
-    const { error } = await db.from('shelves').update({ is_active: b.dataset.on !== 'true' }).eq('id', b.dataset.tg);
-    if (error) toast('Could not update the shelf.'); else render();
-  });
-  const add = $('#addSh');
-  if (add) add.onclick = async () => {
-    const name = await askName('New shelf name'); if (!name) return;
-    const { error } = await db.from('shelves').insert({ warehouse_id: wh.id, name });
-    if (error) toast(error.code === '23505' ? 'This shelf already exists in the warehouse.' : 'Could not add the shelf.');
-    else { toast('Shelf added.'); render(); }
-  };
-}
-
-const TYPE_LABEL = { opening: 'Opening balance', in: 'Stock in', out: 'Stock out', count: 'Physical count', transfer: 'Transfer out' };
-const TYPE_HINT = { opening: 'Sets the starting balance. The shelf balance becomes the quantity you enter.',
-  in: 'Adds the quantity to the shelf balance.', out: 'Removes the quantity from the shelf balance.',
-  transfer: 'Removes the quantity from this shelf and sends it to the selected location or shelf.',
-  count: 'Physical count. The shelf balance becomes the counted quantity.' };
-
-function entryDialog(type, shelf, products, stockMap, dests){
-  return new Promise(res => {
-    const d = $('#edlg'), q = $('#eQ'), sel = $('#eProd'), ctn = $('#eCtn'), pcs = $('#ePcs'), err = $('#eErr'), save = $('#eSave');
-    $('#eTitle').textContent = TYPE_LABEL[type] + ' - Shelf ' + shelf.name;
-    ctn.value = 0; pcs.value = 0; $('#eNote').value = ''; err.textContent = ''; q.value = '';
-    const cur = () => products.find(p => p.id === sel.value);
-    const calc = () => {
-      const p = cur(); const bal = p ? (stockMap[p.id] || 0) : 0;
-      if (!p) { $('#eBal').textContent = 'Select a product.'; $('#eTot').textContent = ''; return; }
-      const per = p.pcs_per_carton || 1, tot = (parseInt(ctn.value, 10) || 0) * per + (parseInt(pcs.value, 10) || 0);
-      $('#eBal').textContent = 'Current balance on this shelf: ' + bal + ' pcs (' + Math.floor(bal / per) + ' cartons + ' + (bal % per) + ' pcs). ' + per + ' pcs per carton.';
-      const after = type === 'in' ? bal + tot : (type === 'out' || type === 'transfer') ? bal - tot : tot;
-      $('#eTot').textContent = TYPE_HINT[type] + ' Entry: ' + tot + ' pcs. New balance: ' + after + ' pcs.';
-    };
-    const fill = () => {
-      const t = q.value.trim().toLowerCase(), keep = sel.value;
-      const rows = products.filter(p => !t || p.name.toLowerCase().includes(t) || p.code.toLowerCase().includes(t));
-      sel.innerHTML = rows.map(p => `<option value="${p.id}">${esc(p.code)} - ${esc(p.name)}</option>`).join('');
-      if (rows.some(p => p.id === keep)) sel.value = keep; else if (rows.length) sel.value = rows[0].id;
-      calc();
-    };
-    const dw = $('#eDW'), ds = $('#eDS');
-    $('#eDest').classList.toggle('hidden', type !== 'transfer');
-    const dt = $('#eDT'), ls = $('#eLS');
-    if (type === 'transfer') {
-      ls.innerHTML = dests.locs.map(l => `<option value="${l.id}">${esc(l.name)}</option>`).join('');
-      dt.innerHTML = (dests.locs.length ? '<option value="loc">Location (outlet, store, etc.)</option>' : '') + (dests.whs.length ? '<option value="shelf">Another shelf (warehouse transfer)</option>' : '');
-      const sw = () => { $('#eShelfDest').classList.toggle('hidden', dt.value !== 'shelf'); $('#eLoc').classList.toggle('hidden', dt.value !== 'loc'); };
-      dt.onchange = sw; sw();
-      dw.innerHTML = dests.whs.map(w => `<option value="${w.id}">${esc(w.name)}</option>`).join('');
-      const fillS = () => { ds.innerHTML = dests.shelves.filter(x => x.warehouse_id === dw.value).map(x => `<option value="${x.id}">Shelf ${esc(x.name)}</option>`).join(''); };
-      dw.onchange = fillS;
-      if (dests.whs.some(w => w.id === view.wh.id)) dw.value = view.wh.id;
-      fillS();
-    }
-    q.oninput = fill; sel.onchange = calc; ctn.oninput = calc; pcs.oninput = calc;
-    $('#eCancel').onclick = () => d.close();
-    $('#eForm').onsubmit = async e => {
-      e.preventDefault(); err.textContent = '';
-      const p = cur(); if (!p) { err.textContent = 'Select a product.'; return; }
-      const c = parseInt(ctn.value, 10) || 0, n = parseInt(pcs.value, 10) || 0;
-      if (c < 0 || n < 0) { err.textContent = 'Quantity cannot be negative.'; return; }
-      if (type !== 'count' && type !== 'opening' && c === 0 && n === 0) { err.textContent = 'Enter a quantity greater than zero.'; return; }
-      const note = $('#eNote').value.trim() || null;
-      const toLoc = type === 'transfer' && dt.value === 'loc';
-      if (type === 'transfer' && toLoc && !ls.value) { err.textContent = 'Select a location.'; return; }
-      if (type === 'transfer' && !toLoc && !ds.value) { err.textContent = 'Select a destination shelf.'; return; }
-      save.disabled = true; save.textContent = 'Saving...';
-      const { error } = toLoc
-        ? await db.rpc('transfer_to_location', { p_shelf: shelf.id, p_location: ls.value, p_product: p.id, p_cartons: c, p_pcs: n, p_note: note })
-        : type === 'transfer'
-        ? await db.rpc('transfer_stock', { p_from_shelf: shelf.id, p_to_shelf: ds.value, p_product: p.id, p_cartons: c, p_pcs: n, p_note: note })
-        : await db.rpc('add_bin_entry', { p_shelf: shelf.id, p_product: p.id, p_type: type, p_cartons: c, p_pcs: n, p_note: note });
-      save.disabled = false; save.textContent = type === 'transfer' ? 'Transfer' : 'Save entry';
-      if (error) { err.textContent = error.message || 'Could not save the entry.'; return; }
-      d.close('ok');
-    };
-    d.onclose = () => res(d.returnValue === 'ok');
-    d.returnValue = ''; fill(); d.showModal();
-  });
-}
-
-function typeLbl(x){
-  const n = x.note || '';
-  if (x.entry_type === 'out' && n.startsWith('Transfer to')) return 'Transfer out';
-  if (x.entry_type === 'in' && n.startsWith('Transfer from')) return 'Transfer in';
-  return TYPE_LABEL[x.entry_type] || x.entry_type;
-}
-
-async function renderCount(el){
-  const { wh, shelf } = view;
-  const [st, pr] = await Promise.all([
-    db.from('stock').select('product_id, qty_pcs').eq('shelf_id', shelf.id),
-    db.from('products').select('id,code,name,pcs_per_carton,is_active').order('name')
-  ]);
-  if (st.error) throw st.error; if (pr.error) throw pr.error;
-  const prods = pr.data || [], byId = Object.fromEntries(prods.map(p => [p.id, p]));
-  const sys = {}; (st.data || []).forEach(r => sys[r.product_id] = r.qty_pcs);
-  const ids = prods.filter(p => (sys[p.id] || 0) > 0).map(p => p.id);
-  const vals = {};
-  const per = id => byId[id].pcs_per_carton || 1;
-  const res = id => {
-    const v = vals[id]; if (!v || (v.c === '' && v.n === '')) return { k: 'none' };
-    const t = (parseInt(v.c, 10) || 0) * per(id) + (parseInt(v.n, 10) || 0), s = sys[id] || 0;
-    return t === s ? { k: 'ok', t, s } : { k: 'bad', t, s, d: t - s };
-  };
-  const badge = r => r.k === 'ok' ? '<span class="badge b-ok">Match</span>'
-    : r.k === 'bad' ? `<span class="badge b-bad">Mismatch (${r.d > 0 ? '+' : ''}${r.d})</span>` : '<span class="badge b-none">Not counted</span>';
-  const upd = () => {
-    let ok = 0, bad = 0, none = 0;
-    ids.forEach(id => {
-      const r = res(id); if (r.k === 'ok') ok++; else if (r.k === 'bad') bad++; else none++;
-      const row = el.querySelector(`tr[data-id="${id}"]`);
-      row.querySelector('.ct').textContent = r.k === 'none' ? '-' : r.t;
-      if (isAdmin()) row.querySelector('.rs').innerHTML = badge(r);
-    });
-    $('#csum').innerHTML = isAdmin() ? `<b style="color:var(--pri)">Match: ${ok}</b> &middot; <b style="color:var(--err)">Mismatch: ${bad}</b> &middot; Not counted: ${none}`
-      : `Counted: ${ids.length - none} of ${ids.length}`;
-  };
-  const draw = () => {
-    const extra = prods.filter(p => p.is_active && !ids.includes(p.id));
-    el.innerHTML = `<button class="back" id="bk">&larr; Shelf ${esc(shelf.name)}</button>
-      <div class="crumb"><h2>Physical count - Shelf ${esc(shelf.name)}</h2></div>
-      <div class="hint" style="margin:0 0 12px">Enter the counted quantity for each product. Leave a row empty to skip it. ${isAdmin() ? 'Counted pcs are compared with the system balance.' : 'Count what you see on the shelf and enter it here.'}</div>
-      ${ids.length ? `<div class="scroll"><table><thead><tr><th>Code</th><th>Product</th>${isAdmin() ? '<th class="n">System (pcs)</th>' : ''}<th>Cartons</th><th>Loose pcs</th><th class="n">Counted</th>${isAdmin() ? '<th>Result</th>' : ''}</tr></thead><tbody>
-      ${ids.map(id => { const p = byId[id], v = vals[id] || { c: '', n: '' }; return `<tr data-id="${id}"><td>${esc(p.code)}</td><td>${esc(p.name)}</td>${isAdmin() ? `<td class="n">${sys[id] || 0}</td>` : ''}
-        <td><input class="ci" type="number" min="0" step="1" data-f="c" value="${esc(v.c)}" aria-label="Counted cartons"></td>
-        <td><input class="ci" type="number" min="0" step="1" data-f="n" value="${esc(v.n)}" aria-label="Counted loose pcs"></td>
-        <td class="n ct">-</td>${isAdmin() ? '<td class="rs"></td>' : ''}</tr>`; }).join('')}</tbody></table></div>` : '<div class="empty">No stock recorded on this shelf. Add a product below if you found stock.</div>'}
-      <div class="row" style="margin-top:12px"><select id="xp" aria-label="Add a product not in the system balance"><option value="">Add a product not on the system list...</option>${extra.map(p => `<option value="${p.id}">${esc(p.code)} - ${esc(p.name)}</option>`).join('')}</select><button class="btn light" id="xa">Add</button></div>
-      <div class="cbar"><span id="csum"></span><button class="btn" id="csave">Save count</button></div>`;
-    $('#bk').onclick = () => go({ t: 'shelf', wh, shelf });
-    el.querySelectorAll('input.ci').forEach(i => i.oninput = () => { const id = i.closest('tr').dataset.id; (vals[id] ??= { c: '', n: '' })[i.dataset.f] = i.value; upd(); });
-    $('#xa').onclick = () => { const id = $('#xp').value; if (!id) return; ids.push(id); draw(); };
-    $('#csave').onclick = save;
-    upd();
-  };
-  const save = async () => {
-    const items = ids.map(id => ({ id, r: res(id) })).filter(x => x.r.k !== 'none');
-    if (!items.length) return toast('Enter the counted quantity for at least one product.');
-    const bad = items.filter(x => x.r.k === 'bad').length;
-    if (isAdmin() && bad && !confirm(bad + ' product(s) do not match the system balance. Saving will set the shelf balance to the counted quantity for those products. Continue?')) return;
-    const btn = $('#csave'); btn.disabled = true; btn.textContent = 'Saving...';
-    let done = 0;
-    for (const x of items) {
-      const v = vals[x.id];
-      const note = x.r.k === 'ok' ? 'Physical count: Match' : `Physical count: Mismatch (system ${x.r.s}, counted ${x.r.t}, difference ${x.r.d > 0 ? '+' : ''}${x.r.d})`;
-      const { error } = await db.rpc('add_bin_entry', { p_shelf: shelf.id, p_product: x.id, p_type: 'count', p_cartons: parseInt(v.c, 10) || 0, p_pcs: parseInt(v.n, 10) || 0, p_note: note });
-      if (error) { btn.disabled = false; btn.textContent = 'Save count'; return toast((done ? done + ' saved. ' : '') + (error.message || 'Could not save the count.')); }
-      done++;
-    }
-    toast(isAdmin() ? `Count saved: ${items.length - bad} matched, ${bad} mismatched.` : `Count saved for ${items.length} product(s).`);
-    go({ t: 'shelf', wh, shelf });
-  };
-  draw();
-}
-
-async function renderShelf(el){
-  const { wh, shelf } = view;
-  const [st, pr, hist] = await Promise.all([
-    db.from('stock').select('product_id, qty_pcs, products(code,name,pcs_per_carton)').eq('shelf_id', shelf.id),
-    db.from('products').select('id,code,name,pcs_per_carton,is_active').order('name'),
-    db.from('bin_card_entries').select('created_at, entry_type, cartons, pcs, total_pcs, balance_before, balance_after, note, products(code,name)')
-      .eq('shelf_id', shelf.id).order('created_at', { ascending: false }).limit(40)
-  ]);
-  if (st.error) throw st.error;
-  const stockMap = {}; (st.data || []).forEach(r => stockMap[r.product_id] = r.qty_pcs);
-  const products = (pr.data || []).filter(p => p.is_active);
-  const rows = (st.data || []).filter(r => r.qty_pcs > 0 && r.products).sort((a, b) => a.products.name.localeCompare(b.products.name));
-  const h = hist.error ? null : (hist.data || []);
-  const fmt = t => new Date(t).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-  el.innerHTML = `<button class="back" id="bk">&larr; ${esc(wh.name)}</button>
-    <div class="crumb"><h2>Shelf ${esc(shelf.name)}</h2></div>
-    <div class="acts">
-      <button class="btn in" data-ty="in">Stock in</button>
-      <button class="btn out" data-ty="transfer">Transfer out</button>
-      <button class="btn cnt" data-ty="count">Physical count</button>
-      ${isAdmin() ? '<button class="btn opn" data-ty="opening">Opening balance</button>' : ''}
-    </div>
-    <h3 class="cat">Current stock</h3>
-    ${rows.length ? `<div class="scroll"><table><thead><tr><th>Code</th><th>Product</th><th class="n">Cartons</th><th class="n">Pcs</th><th class="n">Total pcs</th></tr></thead><tbody>
-    ${rows.map(r => { const per = r.products.pcs_per_carton || 1; return `<tr><td>${esc(r.products.code)}</td><td>${esc(r.products.name)}</td><td class="n">${Math.floor(r.qty_pcs / per)}</td><td class="n">${r.qty_pcs % per}</td><td class="n">${r.qty_pcs}</td></tr>`; }).join('')}
-    </tbody></table></div>` : '<div class="empty">No stock on this shelf yet.</div>'}
-    ${h ? `<h3 class="cat">Bin card history (latest 40)</h3>${h.length ? `<div class="scroll"><table><thead><tr><th>Date</th><th>Type</th><th>Product</th><th class="n">Qty (pcs)</th><th class="n">Balance</th><th>Note</th></tr></thead><tbody>
-    ${h.map(x => `<tr><td>${esc(fmt(x.created_at))}</td><td><span class="badge b-${esc(x.entry_type)}">${esc(typeLbl(x))}</span></td><td>${esc(x.products ? x.products.code + ' - ' + x.products.name : '')}</td><td class="n">${x.total_pcs}</td><td class="n">${x.balance_before} &rarr; ${x.balance_after}</td><td>${esc(x.note || '')}</td></tr>`).join('')}
-    </tbody></table></div>` : '<div class="empty">No entries yet.</div>'}` : ''}`;
-  $('#bk').onclick = () => go({ t: 'shelves', wh });
-  el.querySelectorAll('[data-ty]').forEach(b => b.onclick = async () => {
-    const ty = b.dataset.ty;
-    if (ty === 'count') return go({ t: 'count', wh, shelf });
-    let list = products, dests = null;
-    if (ty === 'transfer') {
-      list = products.filter(p => (stockMap[p.id] || 0) > 0);
-      if (!list.length) return toast('There is no stock on this shelf to transfer.');
-      const [w, sh, lc] = await Promise.all([db.from('warehouses').select('id,name,is_active').order('name'), db.from('shelves').select('id,name,warehouse_id,is_active').order('name'), db.from('locations').select('id,name,is_active').order('name')]);
-      if (w.error || sh.error) return toast('Could not load destinations.');
-      const locs = lc.error ? [] : (lc.data || []).filter(x => x.is_active);
-      const shelves = (sh.data || []).filter(x => x.is_active && x.id !== shelf.id);
-      const whs = (w.data || []).filter(x => x.is_active && shelves.some(y => y.warehouse_id === x.id));
-      if (!whs.length && !locs.length) return toast('No destination available. Add a location first.');
-      dests = { whs, shelves, locs };
-    }
-    if (!list.length) return toast('No active products available.');
-    if (await entryDialog(ty, shelf, list, stockMap, dests)) { toast(ty === 'transfer' ? 'Transfer completed.' : 'Entry saved.'); render(); }
-  });
-}
-
-/* ---------- Locations ---------- */
-const ymd = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-const locRange = { from: ymd(new Date(new Date().getFullYear(), new Date().getMonth(), 1)), to: ymd(new Date()) };
-const n0 = v => Number(v || 0).toLocaleString('en-US', { maximumFractionDigits: 0 });
-const rangeBar = () => `<div class="row"><div style="flex:1"><label for="rf">From</label><input type="date" id="rf" value="${locRange.from}"></div><div style="flex:1"><label for="rt">To</label><input type="date" id="rt" value="${locRange.to}"></div></div>`;
-function bindRange(){
-  $('#rf').onchange = e => { if (e.target.value) { locRange.from = e.target.value; render(); } };
-  $('#rt').onchange = e => { if (e.target.value) { locRange.to = e.target.value; render(); } };
-}
-
-async function renderLocations(el){
-  const [lc, sm] = await Promise.all([
-    db.from('locations').select('*').order('name'),
-    db.rpc('location_summary', { p_from: locRange.from, p_to: locRange.to })
-  ]);
-  if (lc.error) throw lc.error; if (sm.error) throw sm.error;
-  const stat = {}; (sm.data || []).forEach(x => stat[x.location_id] = x);
-  const rows = (lc.data || []).filter(l => isAdmin() || l.is_active);
-  const totPcs = (sm.data || []).reduce((a, x) => a + Number(x.total_pcs || 0), 0);
-  const totVal = (sm.data || []).reduce((a, x) => a + Number(x.total_value || 0), 0);
-  el.innerHTML = `<div class="crumb"><h2>Locations</h2>${isAdmin() ? '<button class="btn" id="addLoc">Add location</button>' : ''}</div>
-    ${rangeBar()}
-    <div class="sum"><div class="sumc"><b>Total transferred</b><span>${n0(totPcs)} pcs${isAdmin() ? ' &middot; &#2547; ' + n0(totVal) : ''}</span></div></div>
-    <div class="list" style="margin-top:12px">${rows.length ? rows.map(l => { const x = stat[l.id] || {}; return `<div class="item ${l.is_active ? '' : 'off'}" style="cursor:default">
-      <button class="grow back" style="text-align:left;color:inherit" data-id="${l.id}" data-name="${esc(l.name)}"><b>${esc(l.name)}</b><span class="sub">${n0(x.transfers)} transfers &middot; ${n0(x.total_pcs)} pcs${isAdmin() ? ' &middot; &#2547; ' + n0(x.total_value) : ''}</span></button>
-      ${l.is_active ? '' : '<span class="tag">Inactive</span>'}
-      ${isAdmin() ? `<button class="btn ghost" data-rn="${l.id}" data-nm="${esc(l.name)}" style="color:var(--pri)">Rename</button><button class="btn ghost" data-tg="${l.id}" data-on="${l.is_active}" style="color:var(--pri)">${l.is_active ? 'Deactivate' : 'Activate'}</button>` : ''}</div>`; }).join('')
-      : '<div class="empty">No locations yet.' + (isAdmin() ? ' Add the first location.' : '') + '</div>'}</div>`;
-  bindRange();
-  el.querySelectorAll('button[data-name]').forEach(b => b.onclick = () => go({ t: 'locdetail', loc: { id: b.dataset.id, name: b.dataset.name } }));
-  el.querySelectorAll('button[data-tg]').forEach(b => b.onclick = async () => {
-    const { error } = await db.from('locations').update({ is_active: b.dataset.on !== 'true' }).eq('id', b.dataset.tg);
-    if (error) toast('Could not update the location.'); else render();
-  });
-  el.querySelectorAll('button[data-rn]').forEach(b => b.onclick = async () => {
-    const name = await askName('Rename location', b.dataset.nm); if (!name || name === b.dataset.nm) return;
-    const { error } = await db.from('locations').update({ name }).eq('id', b.dataset.rn);
-    if (error) toast(error.code === '23505' ? 'A location with this name already exists.' : 'Could not rename the location.');
-    else { toast('Location renamed.'); render(); }
-  });
-  const add = $('#addLoc');
-  if (add) add.onclick = async () => {
-    const name = await askName('New location name'); if (!name) return;
-    const { error } = await db.from('locations').insert({ name });
-    if (error) toast(error.code === '23505' ? 'A location with this name already exists.' : 'Could not add the location.');
-    else { toast('Location added.'); render(); }
-  };
-}
-
-async function renderLocationDetail(el){
-  const { loc } = view;
-  const start = new Date(locRange.from + 'T00:00:00+06:00').toISOString();
-  const end = new Date(new Date(locRange.to + 'T00:00:00+06:00').getTime() + 86400000).toISOString();
-  const [ps, tr] = await Promise.all([
-    db.rpc('location_product_summary', { p_location: loc.id, p_from: locRange.from, p_to: locRange.to }),
-    db.from('location_transfers').select('created_at,cartons,pcs,total_pcs,mrp,note,products(code,name),shelves(name,warehouses(name))')
-      .eq('location_id', loc.id).gte('created_at', start).lt('created_at', end).order('created_at', { ascending: false }).limit(500)
-  ]);
-  if (ps.error) throw ps.error; if (tr.error) throw tr.error;
-  const sum = ps.data || [], list = tr.data || [];
-  const fmt = t => new Date(t).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-  const tp = sum.reduce((a, x) => a + Number(x.total_pcs), 0), tv = sum.reduce((a, x) => a + Number(x.total_value || 0), 0);
-  const from = x => x.shelves ? (x.shelves.warehouses ? x.shelves.warehouses.name + ' / ' : '') + 'Shelf ' + x.shelves.name : '';
-  el.innerHTML = `<button class="back" id="bk">&larr; Locations</button>
-    <div class="crumb"><h2>${esc(loc.name)}</h2><button class="btn light" id="csv">Download CSV</button></div>
-    ${rangeBar()}
-    <h3 class="cat">Product-wise total</h3>
-    ${sum.length ? `<div class="scroll"><table><thead><tr><th>Code</th><th>Product</th><th class="n">Total pcs</th>${isAdmin() ? '<th class="n">Value (BDT)</th>' : ''}</tr></thead><tbody>
-      ${sum.map(x => `<tr><td>${esc(x.product_code)}</td><td>${esc(x.product_name)}</td><td class="n">${n0(x.total_pcs)}</td>${isAdmin() ? `<td class="n">${n0(x.total_value)}</td>` : ''}</tr>`).join('')}
-      <tr><th colspan="2">Total</th><th class="n">${n0(tp)}</th>${isAdmin() ? `<th class="n">${n0(tv)}</th>` : ''}</tr></tbody></table></div>`
-      : '<div class="empty">No transfers to this location in the selected dates.</div>'}
-    <h3 class="cat">Transfer history</h3>
-    ${list.length ? `<div class="scroll"><table><thead><tr><th>Date</th><th>Product</th><th>From</th><th class="n">Cartons</th><th class="n">Pcs</th><th class="n">Total pcs</th>${isAdmin() ? '<th class="n">Value (BDT)</th>' : ''}<th>Note</th></tr></thead><tbody>
-      ${list.map(x => `<tr><td>${esc(fmt(x.created_at))}</td><td>${esc(x.products ? x.products.code + ' - ' + x.products.name : '')}</td><td>${esc(from(x))}</td><td class="n">${x.cartons}</td><td class="n">${x.pcs}</td><td class="n">${n0(x.total_pcs)}</td>${isAdmin() ? `<td class="n">${n0(Number(x.total_pcs) * Number(x.mrp))}</td>` : ''}<td>${esc(x.note || '')}</td></tr>`).join('')}</tbody></table></div>
-      ${list.length >= 500 ? '<div class="hint">Showing the latest 500 transfers. Narrow the date range to see the rest.</div>' : ''}` : ''}`;
-  bindRange();
-  $('#bk').onclick = () => go({ t: 'loc' });
-  $('#csv').onclick = () => {
-    if (!list.length) return toast('No transfers to download.');
-    const q = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
-    const head = ['Date', 'Location', 'Code', 'Product', 'From', 'Cartons', 'Pcs', 'Total pcs'].concat(isAdmin() ? ['MRP', 'Value'] : [], ['Note']);
-    const lines = list.map(x => [fmt(x.created_at), loc.name, x.products ? x.products.code : '', x.products ? x.products.name : '', from(x), x.cartons, x.pcs, x.total_pcs]
-      .concat(isAdmin() ? [x.mrp, Number(x.total_pcs) * Number(x.mrp)] : [], [x.note || '']).map(q).join(','));
-    const blob = new Blob(['\ufeff' + [head.map(q).join(',')].concat(lines).join('\r\n')], { type: 'text/csv;charset=utf-8' });
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-    a.download = loc.name.replace(/[^\w]+/g, '_') + '_' + locRange.from + '_to_' + locRange.to + '.csv'; a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-  };
-}
-
-/* ---------- Products ---------- */
-document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => go({ t: b.dataset.tab }));
-
-function productForm(p, cats, defCode){
-  return new Promise(res => {
-    const d = $('#pdlg'), sel = $('#pCat'), nw = $('#pCatNew');
-    $('#pTitle').textContent = p ? 'Edit product' : 'Add product';
-    sel.innerHTML = cats.map(c => `<option>${esc(c)}</option>`).join('') + '<option value="__new">New category...</option>';
-    sel.value = p && p.category ? p.category : (cats[0] || '__new');
-    const tog = () => { nw.classList.toggle('hidden', sel.value !== '__new'); nw.required = sel.value === '__new'; };
-    sel.onchange = tog; tog(); nw.value = '';
-    $('#pCode').value = p ? p.code : defCode; $('#pCode').disabled = !!p;
-    $('#pName').value = p ? p.name : ''; $('#pMrp').value = p ? p.mrp : '';
-    $('#pPer').value = p ? p.pcs_per_carton : 1; $('#pAct').checked = p ? p.is_active : true;
-    d.onclose = () => {
-      if (d.returnValue !== 'ok') return res(null);
-      res({ code: $('#pCode').value.trim(), name: $('#pName').value.trim(), category: (sel.value === '__new' ? nw.value : sel.value).trim() || null,
-            mrp: Number($('#pMrp').value), pcs_per_carton: parseInt($('#pPer').value, 10), is_active: $('#pAct').checked });
-    };
-    d.showModal();
-  });
-}
-
-async function saveProduct(p, cats, defCode){
-  const v = await productForm(p, cats, defCode); if (!v) return;
-  const { code, ...rest } = v;
-  const { error } = p ? await db.from('products').update(rest).eq('id', p.id) : await db.from('products').insert(v);
-  if (error) toast(error.code === '23505' ? 'A product with this code already exists.' : 'Could not save the product.');
-  else { toast('Product saved.'); render(); }
-}
-
-async function renderProducts(el){
-  const { data, error } = await db.from('products').select('*');
-  if (error) throw error;
-  const all = (data || []).sort((a, b) => (parseInt(a.code) || 0) - (parseInt(b.code) || 0) || a.code.localeCompare(b.code));
-  const cats = [...new Set(all.map(p => p.category).filter(Boolean))].sort();
-  const nextCode = String(Math.max(0, ...all.map(p => parseInt(p.code) || 0)) + 1);
-  el.innerHTML = `<div class="crumb"><h2>Products</h2>${isAdmin() ? '<button class="btn" id="addPr">Add product</button>' : ''}</div>
-    <div class="row"><input id="pq" type="search" placeholder="Search by name or code" aria-label="Search products">
-    <select id="pc" aria-label="Filter by category"><option value="">All categories</option>${cats.map(c => `<option>${esc(c)}</option>`).join('')}</select></div>
-    <div id="plist"></div>`;
-  const draw = () => {
-    const q = $('#pq').value.trim().toLowerCase(), c = $('#pc').value;
-    const rows = all.filter(p => (isAdmin() || p.is_active) && (!c || p.category === c) && (!q || p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q)));
-    const g = {}; rows.forEach(p => (g[p.category || 'Uncategorized'] ??= []).push(p));
-    $('#plist').innerHTML = rows.length ? Object.keys(g).sort().map(k => `<h3 class="cat">${esc(k)} (${g[k].length})</h3><div class="list">${g[k].map(p =>
-      `<${isAdmin() ? 'button' : 'div'} class="item ${p.is_active ? '' : 'off'} ${isAdmin() ? '' : 'ro'}" data-id="${p.id}">
-        <span class="grow"><b>${esc(p.name)}</b><span class="sub">Code ${esc(p.code)} &middot; ${p.pcs_per_carton} pcs per carton</span></span>
-        ${p.is_active ? '' : '<span class="tag">Inactive</span>'}<b>&#2547; ${Number(p.mrp).toLocaleString('en-US')}</b></${isAdmin() ? 'button' : 'div'}>`).join('')}</div>`).join('')
-      : '<div class="empty">No products match your search.</div>';
-  };
-  $('#pq').oninput = draw; $('#pc').onchange = draw; draw();
-  $('#plist').onclick = e => { const b = e.target.closest('[data-id]'); if (b && isAdmin()) saveProduct(all.find(p => p.id === b.dataset.id), cats, nextCode); };
-  const add = $('#addPr'); if (add) add.onclick = () => saveProduct(null, cats, nextCode);
-}
-
-boot();
+// Latest APK file attached to the newest GitHub Release. Keep the file name BinCardPro.apk on every release.
+var APK_URL = 'https://github.com/imsopneelakash/uoll-bin-card-pro/releases/latest/download/BinCardPro.apk';
+document.getElementById('dl').href = APK_URL;
 </script>
 </body>
 </html>
