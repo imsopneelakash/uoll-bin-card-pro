@@ -1,0 +1,84 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'App version, for example 1.0.1 (must be higher than the last release)'
+        required: true
+        default: '1.0.0'
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ github.event.inputs.version || github.ref_name }}
+      KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      KS_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      KS_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install packages
+        working-directory: native
+        run: npm install --no-audit --no-fund
+
+      - name: Prepare web files
+        run: bash native/scripts/prepare-www.sh "$VERSION"
+
+      - name: Create Android project
+        working-directory: native
+        run: npx cap add android
+
+      - name: Customize Android project
+        run: bash native/scripts/customize-android.sh "$VERSION" "${{ github.run_number }}"
+
+      - name: Sync web files into the app
+        working-directory: native
+        run: npx cap sync android
+
+      - name: Build APK
+        working-directory: native/android
+        run: |
+          chmod +x gradlew
+          mkdir -p ../../out
+          if [ -n "$KS_B64" ]; then
+            echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+            export KS_PATH="$RUNNER_TEMP/release.jks"
+            ./gradlew assembleRelease --no-daemon
+            cp app/build/outputs/apk/release/*.apk ../../out/BinCardPro.apk
+          else
+            echo "::warning::No signing key found. Building a debug APK. It cannot update an app installed from a different key."
+            ./gradlew assembleDebug --no-daemon
+            cp app/build/outputs/apk/debug/app-debug.apk ../../out/BinCardPro.apk
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BinCardPro-apk
+          path: native/out/BinCardPro.apk
+
+      - name: Set release tag
+        run: echo "TAG=v${VERSION#v}" >> "$GITHUB_ENV"
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.TAG }}
+          name: Bin Card Pro ${{ env.TAG }}
+          files: native/out/BinCardPro.apk
+          make_latest: true
