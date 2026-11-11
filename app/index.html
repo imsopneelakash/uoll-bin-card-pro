@@ -129,6 +129,7 @@ header.bar{padding:calc(10px + env(safe-area-inset-top)) 14px 10px;border-bottom
 #tabUsers{display:none!important}
 main.wrap{padding-bottom:calc(96px + env(safe-area-inset-bottom))}
 .back{display:none}
+.namebtn{background:none;border:0;color:inherit;font:inherit;text-align:left;cursor:pointer;padding:6px 0}
 .crumb{flex-wrap:wrap}
 .crumb h2{flex:1 1 55%;min-width:0}
 .item .grow{min-width:130px}
@@ -382,7 +383,7 @@ async function renderShelves(el){
   el.innerHTML = `<button class="back" id="bk">&larr; Warehouses</button>
     <div class="crumb"><h2>${esc(wh.name)}</h2>${isAdmin() ? '<button class="btn light" id="rnWh">Rename</button><button class="btn light" id="dlWh" style="color:var(--err)">Delete</button><button class="btn" id="addSh">Add shelf</button>' : ''}</div>
     <div class="list">${rows.length ? rows.map(s => `<div class="item ${s.is_active ? '' : 'off'}" style="cursor:default;flex-wrap:wrap">
-      <button class="grow back" style="text-align:left;color:inherit" data-id="${s.id}" data-name="${esc(s.name)}"><b>Shelf ${esc(s.name)}</b><span class="sub">View stock on this shelf</span></button>
+      <button class="grow namebtn" data-id="${s.id}" data-name="${esc(s.name)}"><b>Shelf ${esc(s.name)}</b><span class="sub">View stock on this shelf</span></button>
       ${s.is_active ? '' : '<span class="tag">Inactive</span>'}
       ${isAdmin() ? `<button class="btn ghost" data-rn="${s.id}" data-nm="${esc(s.name)}" style="color:var(--pri)">Rename</button><button class="btn ghost" data-dl="${s.id}" data-nm="${esc(s.name)}" style="color:var(--err)">Delete</button><button class="btn ghost" data-tg="${s.id}" data-on="${s.is_active}" style="color:var(--pri)">${s.is_active ? 'Deactivate' : 'Activate'}</button>` : ''}</div>`).join('')
       : '<div class="empty">No shelves in this warehouse yet.' + (isAdmin() ? ' Add the first shelf.' : '') + '</div>'}</div>`;
@@ -746,7 +747,7 @@ async function renderLocations(el){
     ${rangeBar()}
     <div class="sum"><div class="sumc"><b>Total transferred</b><span>${n0(totPcs)} pcs${isAdmin() ? ' &middot; &#2547; ' + n0(totVal) : ''}</span></div></div>
     <div class="list" style="margin-top:12px">${rows.length ? rows.map(l => { const x = stat[l.id] || {}; return `<div class="item ${l.is_active ? '' : 'off'}" style="cursor:default;flex-wrap:wrap">
-      <button class="grow back" style="text-align:left;color:inherit" data-id="${l.id}" data-name="${esc(l.name)}"><b>${esc(l.name)}</b><span class="sub">${n0(x.transfers)} transfers &middot; ${n0(x.total_pcs)} pcs${isAdmin() ? ' &middot; &#2547; ' + n0(x.total_value) : ''}</span></button>
+      <button class="grow namebtn" data-id="${l.id}" data-name="${esc(l.name)}"><b>${esc(l.name)}</b><span class="sub">${n0(x.transfers)} transfers &middot; ${n0(x.total_pcs)} pcs${isAdmin() ? ' &middot; &#2547; ' + n0(x.total_value) : ''}</span></button>
       ${l.is_active ? '' : '<span class="tag">Inactive</span>'}
       ${isAdmin() ? `<button class="btn ghost" data-rn="${l.id}" data-nm="${esc(l.name)}" style="color:var(--pri)">Rename</button><button class="btn ghost" data-dl="${l.id}" data-nm="${esc(l.name)}" style="color:var(--err)">Delete</button><button class="btn ghost" data-tg="${l.id}" data-on="${l.is_active}" style="color:var(--pri)">${l.is_active ? 'Deactivate' : 'Activate'}</button>` : ''}</div>`; }).join('')
       : '<div class="empty">No locations yet.' + (isAdmin() ? ' Add the first location.' : '') + '</div>'}</div>`;
