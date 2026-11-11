@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 # Run after "npx cap add android": version, icons, splash, orientation and signing.
 set -euo pipefail
+# Image tools: install ImageMagick if the runner does not have it
+if ! command -v magick >/dev/null 2>&1 && ! command -v convert >/dev/null 2>&1; then
+  sudo apt-get update -qq && sudo apt-get install -y -qq imagemagick
+fi
+if command -v magick >/dev/null 2>&1; then IM="magick"; ID="magick identify"; else IM="convert"; ID="identify"; fi
+
 VER="${1:-1.0.0}"; VER="${VER#v}"; BUILD="${2:-1}"
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 AND="$ROOT/native/android"; RES="$AND/app/src/main/res"; ICON="$ROOT/app/icon-512.png"; ICON_FG="$ROOT/app/icon-512-maskable.png"; LOGO="$ROOT/assets/logo.png"
@@ -21,16 +27,16 @@ declare -A FG=( [mdpi]=108 [hdpi]=162 [xhdpi]=216 [xxhdpi]=324 [xxxhdpi]=432 )
 for d in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
   s=${SZ[$d]}; f=${FG[$d]}; inner=$(( f * 62 / 100 ))
   mkdir -p "$RES/mipmap-$d"
-  convert "$ICON" -resize ${s}x${s} "$RES/mipmap-$d/ic_launcher.png"
-  convert "$ICON" -resize ${s}x${s} "$RES/mipmap-$d/ic_launcher_round.png"
-  convert "$ICON_FG" -resize ${inner}x${inner} -background none -gravity center -extent ${f}x${f} "$RES/mipmap-$d/ic_launcher_foreground.png"
+  $IM "$ICON" -resize ${s}x${s} "$RES/mipmap-$d/ic_launcher.png"
+  $IM "$ICON" -resize ${s}x${s} "$RES/mipmap-$d/ic_launcher_round.png"
+  $IM "$ICON_FG" -resize ${inner}x${inner} -background none -gravity center -extent ${f}x${f} "$RES/mipmap-$d/ic_launcher_foreground.png"
 done
 
 # Splash screen: logo centered on white
 find "$RES" -name 'splash.png' | while read -r file; do
-  dim=$(identify -format '%wx%h' "$file"); w=${dim%x*}; h=${dim#*x}
+  dim=$($ID -format '%wx%h' "$file"); w=${dim%x*}; h=${dim#*x}
   m=$(( (w < h ? w : h) * 45 / 100 ))
-  convert -size ${w}x${h} xc:white \( "$LOGO" -resize ${m}x${m} \) -gravity center -composite "$file"
+  $IM -size ${w}x${h} xc:white \( "$LOGO" -resize ${m}x${m} \) -gravity center -composite "$file"
 done
 
 # Release signing (only when the key is provided through environment variables)
