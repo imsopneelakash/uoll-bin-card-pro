@@ -70,7 +70,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: BinCardPro-apk
-          path: native/out/BinCardPro.apk
+          path: out/BinCardPro.apk
 
       - name: Set release tag
         run: echo "TAG=v${VERSION#v}" >> "$GITHUB_ENV"
@@ -80,5 +80,5 @@ jobs:
         with:
           tag_name: ${{ env.TAG }}
           name: Bin Card Pro ${{ env.TAG }}
-          files: native/out/BinCardPro.apk
+          files: out/BinCardPro.apk
           make_latest: true
