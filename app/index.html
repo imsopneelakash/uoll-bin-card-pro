@@ -341,6 +341,7 @@ async function render(){
     else if (view.t === 'users') await renderUsers(el);
     else if (view.t === 'verify') await renderVerify(el);
     else if (view.t === 'wcount') await renderWhCount(el);
+    else if (view.t === 'whstock') await renderWhStock(el);
     else if (view.t === 'reports') await renderReports(el);
     else if (view.t === 'rep') await renderRep(el);
     else if (view.t === 'locdetail') await renderLocationDetail(el);
@@ -380,11 +381,17 @@ async function renderShelves(el){
   const { data, error } = await db.from('shelves').select('*').eq('warehouse_id', wh.id).order('name');
   if (error) throw error;
   const rows = (data || []).filter(s => isAdmin() || s.is_active);
+  const shelfTotal = {};
+  if (isAdmin() && rows.length) {
+    const sd = await db.from('stock').select('shelf_id,qty_pcs').in('shelf_id', rows.map(s => s.id));
+    (sd.data || []).forEach(x => { shelfTotal[x.shelf_id] = (shelfTotal[x.shelf_id] || 0) + Number(x.qty_pcs); });
+  }
   el.innerHTML = `<button class="back" id="bk">&larr; Warehouses</button>
     <div class="crumb"><h2>${esc(wh.name)}</h2>${isAdmin() ? '<button class="btn light" id="rnWh">Rename</button><button class="btn light" id="dlWh" style="color:var(--err)">Delete</button><button class="btn" id="addSh">Add shelf</button>' : ''}</div>
+    ${isAdmin() ? '<button class="btn" id="whStock" style="width:100%;margin-bottom:10px">Current stock - shelf wise and product wise</button>' : ''}
     <button class="btn" id="whCount" style="width:100%;margin-bottom:12px;background:#1fa3c8">Physical count - whole warehouse</button>
     <div class="list">${rows.length ? rows.map(s => `<div class="item ${s.is_active ? '' : 'off'}" style="cursor:default;flex-wrap:wrap">
-      <button class="grow back" style="text-align:left;color:inherit" data-id="${s.id}" data-name="${esc(s.name)}"><b>Shelf ${esc(s.name)}</b><span class="sub">View stock on this shelf</span></button>
+      <button class="grow back" style="text-align:left;color:inherit" data-id="${s.id}" data-name="${esc(s.name)}"><b>Shelf ${esc(s.name)}</b><span class="sub">${isAdmin() ? n0(shelfTotal[s.id] || 0) + ' pcs &middot; ' : ''}View stock on this shelf</span></button>
       ${s.is_active ? '' : '<span class="tag">Inactive</span>'}
       ${isAdmin() ? `<button class="btn ghost" data-rn="${s.id}" data-nm="${esc(s.name)}" style="color:var(--pri)">Rename</button><button class="btn ghost" data-dl="${s.id}" data-nm="${esc(s.name)}" style="color:var(--err)">Delete</button><button class="btn ghost" data-tg="${s.id}" data-on="${s.is_active}" style="color:var(--pri)">${s.is_active ? 'Deactivate' : 'Activate'}</button>` : ''}</div>`).join('')
       : '<div class="empty">No shelves in this warehouse yet.' + (isAdmin() ? ' Add the first shelf.' : '') + '</div>'}</div>`;
@@ -416,6 +423,7 @@ async function renderShelves(el){
     if (msg) toast(msg); else { toast('Warehouse deleted.'); go({ t: 'wh' }); }
   };
   $('#whCount').onclick = () => go({ t: 'wcount', wh });
+  const ws = $('#whStock'); if (ws) ws.onclick = () => go({ t: 'whstock', wh });
   const add = $('#addSh');
   if (add) add.onclick = async () => {
     const name = await askName('New shelf name'); if (!name) return;
@@ -1412,6 +1420,43 @@ async function renderWhVerify(el){
   });
 }
 
+/* ---------- Warehouse stock overview (master / admin) ---------- */
+let wsQ = '';
+async function renderWhStock(el){
+  if (!isAdmin()) { el.innerHTML = '<div class="empty">You do not have access to this page.</div>'; return; }
+  const { wh } = view;
+  const sh = await db.from('shelves').select('id,name,is_active').eq('warehouse_id', wh.id).order('name');
+  if (sh.error) throw sh.error;
+  const shelves = sh.data || [];
+  let rows = [];
+  if (shelves.length) {
+    const st = await db.from('stock').select('shelf_id,qty_pcs,products(id,code,name,mrp)').in('shelf_id', shelves.map(s => s.id)).gt('qty_pcs', 0);
+    if (st.error) throw st.error;
+    rows = (st.data || []).filter(r => r.products);
+  }
+  const g = new Map();
+  rows.forEach(r => {
+    const p = r.products; let o = g.get(p.id);
+    if (!o) { o = { code: p.code, name: p.name, mrp: Number(p.mrp || 0), tot: 0, by: {} }; g.set(p.id, o); }
+    o.tot += Number(r.qty_pcs); o.by[r.shelf_id] = (o.by[r.shelf_id] || 0) + Number(r.qty_pcs);
+  });
+  const q = wsQ.trim().toLowerCase();
+  const list = [...g.values()].filter(o => !q || o.name.toLowerCase().includes(q) || String(o.code).toLowerCase().includes(q)).sort((a, b) => a.name.localeCompare(b.name));
+  const tp = list.reduce((a, o) => a + o.tot, 0), tv = list.reduce((a, o) => a + o.tot * o.mrp, 0);
+  const shelfTot = s => list.reduce((a, o) => a + (o.by[s.id] || 0), 0);
+  el.innerHTML = `<button class="back" id="bk">&larr; ${esc(wh.name)}</button>
+    <div class="crumb"><h2>Current stock - ${esc(wh.name)}</h2><button class="btn light" id="wsCsv">Download CSV</button></div>
+    <div class="kpis">${kpi('Products in stock', n0(list.length))}${kpi('Total quantity', n0(tp) + ' pcs')}${kpi('Stock value', money(tv), 'at MRP')}</div>
+    <div style="margin:10px 0"><input type="search" id="wsq" value="${esc(wsQ)}" placeholder="Search product name or code" aria-label="Search product"></div>
+    ${list.length ? `<div class="scroll"><table class="bc">${tblHead(['Code', 'Product'].concat(shelves.map(s => '>Shelf ' + s.name), ['>Total (pcs)', '>Value (BDT)']))}<tbody>
+    ${list.map(o => `<tr><td>${esc(o.code)}</td><td class="w">${esc(o.name)}</td>${shelves.map(s => `<td class="n">${o.by[s.id] ? n0(o.by[s.id]) : '-'}</td>`).join('')}<td class="n"><b>${n0(o.tot)}</b></td><td class="n">${n0(o.tot * o.mrp)}</td></tr>`).join('')}
+    <tr><th colspan="2">Total</th>${shelves.map(s => `<th class="n">${n0(shelfTot(s))}</th>`).join('')}<th class="n">${n0(tp)}</th><th class="n">${n0(tv)}</th></tr></tbody></table></div>` : '<div class="empty">No stock in this warehouse yet.</div>'}`;
+  $('#bk').onclick = () => go({ t: 'shelves', wh });
+  $('#wsq').onchange = e => { wsQ = e.target.value; render(); };
+  $('#wsCsv').onclick = () => saveCsv('Stock_' + wh.name.replace(/\W+/g, '_'), ['Code', 'Product'].concat(shelves.map(s => 'Shelf ' + s.name), ['Total (pcs)', 'Value (MRP)']),
+    list.map(o => [o.code, o.name].concat(shelves.map(s => o.by[s.id] || 0), [o.tot, Math.round(o.tot * o.mrp)])));
+}
+
 /* ---------- Add, rename, delete places (master / admin) ---------- */
 async function place(kind, action, o = {}){
   const { error } = await db.rpc('manage_place', { p_kind: kind, p_action: action, p_id: o.id || null, p_name: o.name || null, p_parent: o.parent || null });
@@ -1620,7 +1665,7 @@ function viewTitle(v){
     case 'verify': return 'Count verification'; case 'reports': return 'Reports'; case 'users': return 'Users';
     case 'shelves': return v.wh ? v.wh.name : 'Shelves';
     case 'shelf': return v.shelf ? 'Shelf ' + v.shelf.name : 'Shelf';
-    case 'count': return 'Physical count'; case 'wcount': return v.wh ? 'Count - ' + v.wh.name : 'Warehouse count'; case 'bincard': return 'Bin card';
+    case 'count': return 'Physical count'; case 'whstock': return v.wh ? 'Stock - ' + v.wh.name : 'Warehouse stock'; case 'wcount': return v.wh ? 'Count - ' + v.wh.name : 'Warehouse count'; case 'bincard': return 'Bin card';
     case 'locdetail': return v.loc ? v.loc.name : 'Location';
     case 'rep': { const r = REPORTS.find(x => x.k === v.rep); return r ? r.t : 'Report'; }
     default: return 'Bin Card Pro';
