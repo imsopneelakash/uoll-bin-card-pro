@@ -128,8 +128,7 @@ header.bar{padding:calc(10px + env(safe-area-inset-top)) 14px 10px;border-bottom
 .tabs button[data-n]:not([data-n=""])::after{content:attr(data-n);position:absolute;top:1px;left:calc(50% + 6px);background:var(--err);color:#fff;border-radius:99px;font-size:10px;line-height:16px;min-width:16px;padding:0 4px;text-align:center}
 #tabUsers{display:none!important}
 main.wrap{padding-bottom:calc(96px + env(safe-area-inset-bottom))}
-.back{display:none}
-.namebtn{background:none;border:0;color:inherit;font:inherit;text-align:left;cursor:pointer;padding:6px 0}
+.back:not(.grow){display:none}
 .crumb{flex-wrap:wrap}
 .crumb h2{flex:1 1 55%;min-width:0}
 .item .grow{min-width:130px}
@@ -341,6 +340,7 @@ async function render(){
     else if (view.t === 'loc') await renderLocations(el);
     else if (view.t === 'users') await renderUsers(el);
     else if (view.t === 'verify') await renderVerify(el);
+    else if (view.t === 'wcount') await renderWhCount(el);
     else if (view.t === 'reports') await renderReports(el);
     else if (view.t === 'rep') await renderRep(el);
     else if (view.t === 'locdetail') await renderLocationDetail(el);
@@ -382,8 +382,9 @@ async function renderShelves(el){
   const rows = (data || []).filter(s => isAdmin() || s.is_active);
   el.innerHTML = `<button class="back" id="bk">&larr; Warehouses</button>
     <div class="crumb"><h2>${esc(wh.name)}</h2>${isAdmin() ? '<button class="btn light" id="rnWh">Rename</button><button class="btn light" id="dlWh" style="color:var(--err)">Delete</button><button class="btn" id="addSh">Add shelf</button>' : ''}</div>
+    <button class="btn" id="whCount" style="width:100%;margin-bottom:12px;background:#1fa3c8">Physical count - whole warehouse</button>
     <div class="list">${rows.length ? rows.map(s => `<div class="item ${s.is_active ? '' : 'off'}" style="cursor:default;flex-wrap:wrap">
-      <button class="grow namebtn" data-id="${s.id}" data-name="${esc(s.name)}"><b>Shelf ${esc(s.name)}</b><span class="sub">View stock on this shelf</span></button>
+      <button class="grow back" style="text-align:left;color:inherit" data-id="${s.id}" data-name="${esc(s.name)}"><b>Shelf ${esc(s.name)}</b><span class="sub">View stock on this shelf</span></button>
       ${s.is_active ? '' : '<span class="tag">Inactive</span>'}
       ${isAdmin() ? `<button class="btn ghost" data-rn="${s.id}" data-nm="${esc(s.name)}" style="color:var(--pri)">Rename</button><button class="btn ghost" data-dl="${s.id}" data-nm="${esc(s.name)}" style="color:var(--err)">Delete</button><button class="btn ghost" data-tg="${s.id}" data-on="${s.is_active}" style="color:var(--pri)">${s.is_active ? 'Deactivate' : 'Activate'}</button>` : ''}</div>`).join('')
       : '<div class="empty">No shelves in this warehouse yet.' + (isAdmin() ? ' Add the first shelf.' : '') + '</div>'}</div>`;
@@ -414,6 +415,7 @@ async function renderShelves(el){
     const msg = await place('warehouse', 'delete', { id: wh.id });
     if (msg) toast(msg); else { toast('Warehouse deleted.'); go({ t: 'wh' }); }
   };
+  $('#whCount').onclick = () => go({ t: 'wcount', wh });
   const add = $('#addSh');
   if (add) add.onclick = async () => {
     const name = await askName('New shelf name'); if (!name) return;
@@ -550,6 +552,55 @@ async function renderCount(el){
     if (error) { btn.disabled = false; btn.textContent = 'Submit for verification'; return toast(error.message || 'Could not submit the count.'); }
     toast('Count submitted for verification (' + items.length + ' products).');
     go({ t: 'shelf', wh, shelf });
+  };
+  draw();
+}
+
+async function renderWhCount(el){
+  const { wh } = view;
+  const [cv, pr] = await Promise.all([
+    db.rpc('wcount_employee_view', { p_wh: wh.id, p_date: ymd(new Date()) }),
+    db.from('products').select('id,code,name,is_active').order('name')
+  ]);
+  if (cv.error) throw cv.error; if (pr.error) throw pr.error;
+  const all = cv.data || [], prods = pr.data || [];
+  const rows = all.filter(r => r.state === 'recount' || r.state === 'todo');
+  const waiting = all.filter(r => r.state === 'pending').length, done = all.filter(r => r.state === 'verified').length;
+  const known = new Set(all.map(r => r.product_id));
+  const list = rows.map(r => ({ id: r.product_id, code: r.product_code, name: r.product_name, recount: r.state === 'recount', note: r.recount_note }));
+  const vals = {};
+  const upd = () => {
+    let n = 0;
+    list.forEach(p => { const v = vals[p.id]; const has = v != null && v !== ''; if (has) n++; const c = el.querySelector(`tr[data-id="${p.id}"] .rs`); if (c) c.innerHTML = has ? '<span class="badge b-count">Entered</span>' : '<span class="badge b-none">Not counted</span>'; });
+    $('#csum').innerHTML = `<b style="color:var(--pri)">Entered: ${n}</b> &middot; Not counted: ${list.length - n}`;
+  };
+  const draw = () => {
+    const extra = prods.filter(p => p.is_active && !known.has(p.id) && !list.some(x => x.id === p.id));
+    el.innerHTML = `<button class="back" id="bk">&larr; ${esc(wh.name)}</button>
+      <div class="crumb"><h2>Physical count - ${esc(wh.name)}</h2></div>
+      <div class="hint" style="margin:0 0 12px">Count the total quantity of each product in this whole warehouse (all shelves together) and enter it in pcs. Leave a row empty to skip it. Your count is sent to a master or admin for verification. Products already counted today are not shown again.</div>
+      ${waiting || done ? `<div class="hint" style="margin:0 0 12px">Awaiting verification: <b>${waiting}</b> &middot; Verified today: <b>${done}</b></div>` : ''}
+      ${list.length ? `<div class="scroll"><table><thead><tr><th>Code</th><th>Product</th><th>Counted (pcs)</th><th>Status</th></tr></thead><tbody>
+      ${list.map(p => `<tr data-id="${p.id}"><td>${esc(p.code)}</td><td>${esc(p.name)}${p.recount ? ` <span class="badge b-bad">Recount</span>${p.note ? `<small style="display:block;color:var(--mut)">${esc(p.note)}</small>` : ''}` : ''}</td>
+        <td><input class="ci" type="number" min="0" step="1" inputmode="numeric" value="${esc(vals[p.id] ?? '')}" aria-label="Counted pcs"></td><td class="rs"></td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">There are no products to count in this warehouse right now.</div>'}
+      <div class="row" style="margin-top:12px"><select id="xp" aria-label="Add a product that is not on the list"><option value="">Add a product that is not on the list...</option>${extra.map(p => `<option value="${p.id}">${esc(p.code)} - ${esc(p.name)}</option>`).join('')}</select><button class="btn light" id="xa">Add</button></div>
+      <div class="cbar"><span id="csum"></span><button class="btn" id="csave">Submit for verification</button></div>`;
+    $('#bk').onclick = () => go({ t: 'shelves', wh });
+    el.querySelectorAll('input.ci').forEach(i => i.oninput = () => { vals[i.closest('tr').dataset.id] = i.value; upd(); });
+    $('#xa').onclick = () => { const id = $('#xp').value; if (!id) return; const p = prods.find(x => x.id === id); list.push({ id, code: p.code, name: p.name, recount: false }); draw(); };
+    $('#csave').onclick = save;
+    upd();
+  };
+  const save = async () => {
+    const items = list.filter(p => vals[p.id] != null && vals[p.id] !== '').map(p => ({ product_id: p.id, counted: parseInt(vals[p.id], 10) || 0 }));
+    if (!items.length) return toast('Enter the counted quantity for at least one product.');
+    if (!confirm('Submit the count of ' + items.length + ' product(s) for verification?')) return;
+    const btn = $('#csave'); btn.disabled = true; btn.textContent = 'Submitting...';
+    const now = new Date();
+    const { error } = await db.rpc('wcount_submit', { p_wh: wh.id, p_items: items, p_device_time: now.toISOString(), p_date: ymd(now) });
+    if (error) { btn.disabled = false; btn.textContent = 'Submit for verification'; return toast(error.message || 'Could not submit the count.'); }
+    toast('Count submitted for verification (' + items.length + ' products).');
+    go({ t: 'shelves', wh });
   };
   draw();
 }
@@ -747,7 +798,7 @@ async function renderLocations(el){
     ${rangeBar()}
     <div class="sum"><div class="sumc"><b>Total transferred</b><span>${n0(totPcs)} pcs${isAdmin() ? ' &middot; &#2547; ' + n0(totVal) : ''}</span></div></div>
     <div class="list" style="margin-top:12px">${rows.length ? rows.map(l => { const x = stat[l.id] || {}; return `<div class="item ${l.is_active ? '' : 'off'}" style="cursor:default;flex-wrap:wrap">
-      <button class="grow namebtn" data-id="${l.id}" data-name="${esc(l.name)}"><b>${esc(l.name)}</b><span class="sub">${n0(x.transfers)} transfers &middot; ${n0(x.total_pcs)} pcs${isAdmin() ? ' &middot; &#2547; ' + n0(x.total_value) : ''}</span></button>
+      <button class="grow back" style="text-align:left;color:inherit" data-id="${l.id}" data-name="${esc(l.name)}"><b>${esc(l.name)}</b><span class="sub">${n0(x.transfers)} transfers &middot; ${n0(x.total_pcs)} pcs${isAdmin() ? ' &middot; &#2547; ' + n0(x.total_value) : ''}</span></button>
       ${l.is_active ? '' : '<span class="tag">Inactive</span>'}
       ${isAdmin() ? `<button class="btn ghost" data-rn="${l.id}" data-nm="${esc(l.name)}" style="color:var(--pri)">Rename</button><button class="btn ghost" data-dl="${l.id}" data-nm="${esc(l.name)}" style="color:var(--err)">Delete</button><button class="btn ghost" data-tg="${l.id}" data-on="${l.is_active}" style="color:var(--pri)">${l.is_active ? 'Deactivate' : 'Activate'}</button>` : ''}</div>`; }).join('')
       : '<div class="empty">No locations yet.' + (isAdmin() ? ' Add the first location.' : '') + '</div>'}</div>`;
@@ -994,6 +1045,7 @@ const REPORTS = [
   { k: 'activity', t: 'User activity', d: 'Entries per user and per day' },
   { k: 'audit', t: 'Audit pending', d: 'Entries that are not audited yet, by shelf' },
   { k: 'movement', t: 'Fast and dead stock', d: 'Top moving products and stock that has not moved' },
+  { k: 'wcountres', t: 'Warehouse count results', d: 'Whole-warehouse product counts: day wise, month wise, by warehouse and date to date' },
   { k: 'countres', t: 'Physical count results', d: 'Day wise, month wise and date to date count results with recounts and differences' },
   { k: 'reorder', t: 'Reorder suggestion', d: 'Products at or below minimum stock and how much to order' },
   { k: 'writeoff', t: 'Write-offs', d: 'Damaged, expired and lost stock with quantity and value' },
@@ -1062,7 +1114,7 @@ async function renderReports(el){
 
 async function renderRep(el){
   if (!isAdmin()) { el.innerHTML = '<div class="empty">You do not have access to this page.</div>'; return; }
-  const fn = { ledger: repLedger, location: repLocation, count: repCount, supplier: repSupplier, issue: repIssue, activity: repActivity, audit: repAudit, movement: repMovement, countres: repCountRes, reorder: repReorder, writeoff: repWriteoff, corrections: repCorrections }[view.rep];
+  const fn = { ledger: repLedger, location: repLocation, count: repCount, supplier: repSupplier, issue: repIssue, activity: repActivity, audit: repAudit, movement: repMovement, countres: repCountRes, wcountres: repWCountRes, reorder: repReorder, writeoff: repWriteoff, corrections: repCorrections }[view.rep];
   if (!fn) return go({ t: 'reports' });
   await fn(el);
 }
@@ -1312,6 +1364,54 @@ async function repCorrections(el){
     rows.map(r => [fmtD(r.entry_time) + ' ' + fmtT(r.entry_time), r.kind, r.warehouse_name, r.shelf_name, r.product_code + ' - ' + r.product_name, r.location_name || '', r.qty, Math.round(nz(r.value)), r.reason || '', r.by_name])));
 }
 
+async function renderVerify(el){
+  if (!isAdmin()) { el.innerHTML = '<div class="empty">You do not have access to this page.</div>'; return; }
+  el.innerHTML = '<div id="vs"></div><div id="vw"></div>';
+  await Promise.all([renderVerifyShelf($('#vs')), renderWhVerify($('#vw'))]);
+}
+async function renderWhVerify(el){
+  const { data, error } = await db.rpc('wcount_admin_list');
+  if (error) throw error;
+  const rows = data || [];
+  const pend = rows.filter(r => r.status === 'pending'), wait = rows.filter(r => r.status === 'recount');
+  const diff = r => nz(r.counted_pcs) - nz(r.system_pcs);
+  const ok = pend.filter(r => diff(r) === 0);
+  const sgn = v => (v > 0 ? '+' : '') + n0(v);
+  el.innerHTML = `<h3 class="cat" style="margin-top:26px">Whole-warehouse counts</h3>
+    <div class="hint" style="margin-top:0">System quantity is the total of all shelves of the warehouse. Accept difference records the difference and can also apply it to one shelf.</div>
+    ${ok.length ? `<div class="row"><button class="btn" id="wvall">Verify all matching (${ok.length})</button></div>` : ''}
+    ${pend.length ? `<div class="scroll"><table class="bc">${tblHead(['Counted on', 'Warehouse', 'Product', 'Counted by', '>Counted', '>System', '>Difference', '>Value (BDT)', '>Round', ''])}<tbody>
+    ${pend.map(r => { const d = diff(r); return `<tr><td>${esc(fmtDT(r.device_time))}</td><td class="w">${esc(r.warehouse_name)}</td><td class="w">${esc(r.product_code)} - ${esc(r.product_name)}</td><td>${esc(r.counted_by_name)}</td><td class="n">${n0(r.counted_pcs)}</td><td class="n">${n0(r.system_pcs)}</td>
+      <td class="n" style="color:${d ? 'var(--err)' : 'var(--pri)'}"><b>${d ? sgn(d) : 'Match'}</b></td><td class="n">${d ? sgn(d * nz(r.mrp)) : ''}</td><td class="n">${r.rounds}</td>
+      <td style="white-space:nowrap">${d === 0 ? `<button class="btn" data-wv="${r.item_id}" style="padding:4px 10px;font-size:13px">Verify</button> ` : `<button class="btn light" data-wac="${r.item_id}" style="padding:4px 10px;font-size:13px">Accept difference</button> `}<button class="btn ghost" data-wrc="${r.item_id}" style="color:var(--err);padding:4px 10px;font-size:13px">Recount</button></td></tr>`; }).join('')}</tbody></table></div>` : '<div class="empty">No warehouse counts are waiting for verification.</div>'}
+    ${wait.length ? `<div class="hint">Waiting for recount: ${wait.map(r => esc(r.warehouse_name) + ' - ' + esc(r.product_name)).join('; ')}</div>` : ''}`;
+  const verify = async ids => {
+    const { data: res, error: e } = await db.rpc('wcount_verify', { p_items: ids });
+    if (e) return toast(e.message || 'Could not verify.');
+    toast(res.verified + ' verified' + (res.skipped ? ', ' + res.skipped + ' skipped because the system quantity changed.' : '.')); render();
+  };
+  const va = el.querySelector('#wvall'); if (va) va.onclick = () => { va.disabled = true; verify(ok.map(r => r.item_id)); };
+  el.querySelectorAll('[data-wv]').forEach(b => b.onclick = () => { b.disabled = true; verify([b.dataset.wv]); });
+  el.querySelectorAll('[data-wac]').forEach(b => b.onclick = async () => {
+    const r = pend.find(x => x.item_id === b.dataset.wac), d = diff(r);
+    const { data: sh } = await db.rpc('wcount_shelf_breakdown', { p_wh: r.warehouse_id, p_product: r.product_id });
+    const okd = await formDlg('Accept difference', `<div class="hint" style="margin:0 0 10px"><b>${esc(r.product_code)} - ${esc(r.product_name)}</b><br>${esc(r.warehouse_name)}: system ${n0(r.system_pcs)} pcs, counted ${n0(r.counted_pcs)} pcs (${sgn(d)} pcs, BDT ${sgn(d * nz(r.mrp))})</div>
+      <label>Apply the difference to a shelf</label><select data-s><option value="">Do not change shelf stock (record the difference only)</option>${(sh || []).map(s => `<option value="${s.shelf_id}">Shelf ${esc(s.shelf_name)} (now ${n0(s.qty_pcs)} pcs)</option>`).join('')}</select>
+      <div class="hint">If you choose a shelf, its balance is changed by ${sgn(d)} pcs and a count entry is added to that shelf bin card. Otherwise only the result is recorded and shelf stock stays as it is.</div>`, 'Accept difference', api => {
+      api.run(async () => { const { error: e } = await db.rpc('wcount_accept', { p_item: r.item_id, p_shelf: api.q('[data-s]').value || null }); return e ? (e.message || 'Could not accept the difference.') : ''; });
+    });
+    if (okd) { toast('Difference accepted.'); render(); }
+  });
+  el.querySelectorAll('[data-wrc]').forEach(b => b.onclick = async () => {
+    const r = pend.find(x => x.item_id === b.dataset.wrc);
+    const okd = await formDlg('Send for recount', `<div class="hint" style="margin:0 0 10px"><b>${esc(r.product_code)} - ${esc(r.product_name)}</b><br>${esc(r.warehouse_name)} &middot; counted ${n0(r.counted_pcs)} pcs</div>
+      <label>Note for the employee (optional)</label><textarea data-t rows="2" maxlength="200" placeholder="For example: please check the second floor"></textarea>`, 'Send for recount', api => {
+      api.run(async () => { const { error: e } = await db.rpc('wcount_recount', { p_item: r.item_id, p_note: api.q('[data-t]').value.trim() || null }); return e ? (e.message || 'Could not send for recount.') : ''; });
+    });
+    if (okd) { toast('Sent to the employee for recount.'); render(); }
+  });
+}
+
 /* ---------- Add, rename, delete places (master / admin) ---------- */
 async function place(kind, action, o = {}){
   const { error } = await db.rpc('manage_place', { p_kind: kind, p_action: action, p_id: o.id || null, p_name: o.name || null, p_parent: o.parent || null });
@@ -1325,7 +1425,7 @@ async function refreshBadge(){
   try { const { data } = await db.rpc('count_pending_total'); const b = $('#tabVerify'); if (b) b.dataset.n = Number(data) > 0 ? String(Number(data)) : ''; } catch (e) {}
 }
 const fmtDT = t => fmtD(t) + ' ' + fmtT(t);
-async function renderVerify(el){
+async function renderVerifyShelf(el){
   if (!isAdmin()) { el.innerHTML = '<div class="empty">You do not have access to this page.</div>'; return; }
   const { data, error } = await db.rpc('count_admin_list');
   if (error) throw error;
@@ -1408,6 +1508,44 @@ async function repCountRes(el){
   $('#crv').onchange = e => { crView = e.target.value; render(); };
 }
 
+let wcView = 'day';
+async function repWCountRes(el){
+  const rows = await rpcAll('report_wcount_results', { p_from: repRange.from, p_to: repRange.to });
+  const fd = r => nz(r.counted_pcs) - nz(r.sys_pcs);
+  const extra = `<div class="row" style="margin-top:10px">${sel('wcv', 'View', [['day', 'Day wise'], ['month', 'Month wise'], ['wh', 'By warehouse'], ['emp', 'By employee'], ['detail', 'Date to date (all products)']], wcView)}</div>`;
+  if (wcView !== 'detail') {
+    const keyOf = r => wcView === 'day' ? r.count_date : wcView === 'month' ? r.count_date.slice(0, 7) : wcView === 'wh' ? r.warehouse_name : r.counted_by_name;
+    const g = new Map();
+    rows.forEach(r => {
+      const k = keyOf(r); let o = g.get(k);
+      if (!o) { o = { shelves: new Set(), n: 0, ver: 0, first: 0, rec: 0, acc: 0, sp: 0, sv: 0, ep: 0, ev: 0, pend: 0 }; g.set(k, o); }
+      o.shelves.add(r.warehouse_name); o.n++;
+      if (r.status === 'verified') o.ver++; else o.pend++;
+      if (nz(r.first_diff) === 0) o.first++;
+      if (r.rounds > 1) o.rec++;
+      if (r.accepted_diff) { o.acc++; const d = fd(r), v = d * nz(r.mrp); if (d < 0) { o.sp += -d; o.sv += -v; } else { o.ep += d; o.ev += v; } }
+    });
+    const list = [...g.entries()].sort((a, b) => (wcView === 'emp' || wcView === 'wh') ? a[0].localeCompare(b[0]) : b[0].localeCompare(a[0]));
+    const lbl = k => wcView === 'day' ? fmtD(k + 'T12:00:00+06:00') : wcView === 'month' ? monthLbl(k) : k;
+    const head = [wcView === 'day' ? 'Date' : wcView === 'month' ? 'Month' : wcView === 'wh' ? 'Warehouse' : 'Employee', '>Warehouses', '>Products counted', '>Verified', '>Correct at first count', '>Recounted', '>Differences accepted', '>Shortage (pcs)', '>Shortage (BDT)', '>Excess (pcs)', '>Excess (BDT)', '>Not verified yet'];
+    const T = { shelves: 0, n: 0, ver: 0, first: 0, rec: 0, acc: 0, sp: 0, sv: 0, ep: 0, ev: 0, pend: 0 };
+    list.forEach(([, o]) => { ['n', 'ver', 'first', 'rec', 'acc', 'sp', 'sv', 'ep', 'ev', 'pend'].forEach(f => T[f] += o[f]); });
+    const cells = o => [o.shelves.size, o.n, o.ver, o.first, o.rec, o.acc, o.sp, o.sv, o.ep, o.ev, o.pend];
+    el.innerHTML = repHead('Warehouse count results', { extra }) + `<div class="kpis">${kpi('Products counted', n0(T.n))}${kpi('Verified', n0(T.ver), '', 'good')}${kpi('Correct at first count', n0(T.first), T.n ? (T.first / T.n * 100).toFixed(0) + '%' : '', 'good')}${kpi('Recounted', n0(T.rec), '', T.rec ? 'warn' : '')}${kpi('Shortage', money(T.sv), n0(T.sp) + ' pcs', T.sp ? 'bad' : '')}${kpi('Excess', money(T.ev), n0(T.ep) + ' pcs')}</div>
+      <div class="hint">Shortage and excess include only differences accepted by a master or admin. A product counts as correct at first count when the first submitted quantity matched the system.</div>
+      ${list.length ? `<div class="scroll"><table class="bc">${tblHead(head)}<tbody>${list.map(([k, o]) => `<tr><td>${esc(lbl(k))}</td>${cells(o).map(v => `<td class="n">${n0(v)}</td>`).join('')}</tr>`).join('')}
+      <tr><th>Total</th><th class="n"></th>${[T.n, T.ver, T.first, T.rec, T.acc, T.sp, T.sv, T.ep, T.ev, T.pend].map(v => `<th class="n">${n0(v)}</th>`).join('')}</tr></tbody></table></div>` : '<div class="empty">No counts in the selected dates.</div>'}`;
+    repBind(() => saveCsv('Warehouse_count_results_' + wcView, head.map(h => h.replace(/^>/, '')), list.map(([k, o]) => [lbl(k)].concat(cells(o)))));
+  } else {
+    el.innerHTML = repHead('Warehouse count results', { extra }) + (rows.length ? `<div class="hint">${rows.length} counted products. Date is the date on the employee's device.</div>
+      <div class="scroll"><table class="bc">${tblHead(['Date', 'Time', 'Warehouse', 'Product', 'Counted by', '>Counted', '>System', '>Difference', '>Rounds', 'Status', 'Verified by', 'Verified on'])}<tbody>
+      ${rows.map(r => { const d = fd(r); return `<tr><td>${esc(fmtD(r.count_date + 'T12:00:00+06:00'))}</td><td>${esc(fmtT(r.device_time))}</td><td class="w">${esc(r.warehouse_name)}</td><td class="w">${esc(r.product_code)} - ${esc(r.product_name)}</td><td>${esc(r.counted_by_name)}</td><td class="n">${n0(r.counted_pcs)}</td><td class="n">${n0(r.sys_pcs)}</td><td class="n">${d ? (d > 0 ? '+' : '') + n0(d) : '0'}</td><td class="n">${r.rounds}</td><td>${r.status === 'verified' ? (r.accepted_diff ? 'Verified (difference accepted)' : 'Verified') : r.status === 'recount' ? 'Waiting for recount' : 'Awaiting verification'}</td><td>${esc(r.verified_by_name || '')}</td><td>${r.verified_at ? esc(fmtDT(r.verified_at)) : ''}</td></tr>`; }).join('')}</tbody></table></div>` : '<div class="empty">No counts in the selected dates.</div>');
+    repBind(() => saveCsv('Warehouse_count_results_detail', ['Date', 'Time', 'Warehouse', 'Shelf adjusted', 'Product', 'Counted by', 'Counted', 'System', 'Difference', 'Rounds', 'Status', 'Verified by', 'Verified on'],
+      rows.map(r => [r.count_date, fmtT(r.device_time), r.warehouse_name, r.shelf_name, r.product_code + ' - ' + r.product_name, r.counted_by_name, r.counted_pcs, r.sys_pcs, fd(r), r.rounds, r.status, r.verified_by_name || '', r.verified_at ? fmtDT(r.verified_at) : ''])));
+  }
+  $('#wcv').onchange = e => { wcView = e.target.value; render(); };
+}
+
 /* ---------- Products ---------- */
 document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => go({ t: b.dataset.tab }));
 
@@ -1482,7 +1620,7 @@ function viewTitle(v){
     case 'verify': return 'Count verification'; case 'reports': return 'Reports'; case 'users': return 'Users';
     case 'shelves': return v.wh ? v.wh.name : 'Shelves';
     case 'shelf': return v.shelf ? 'Shelf ' + v.shelf.name : 'Shelf';
-    case 'count': return 'Physical count'; case 'bincard': return 'Bin card';
+    case 'count': return 'Physical count'; case 'wcount': return v.wh ? 'Count - ' + v.wh.name : 'Warehouse count'; case 'bincard': return 'Bin card';
     case 'locdetail': return v.loc ? v.loc.name : 'Location';
     case 'rep': { const r = REPORTS.find(x => x.k === v.rep); return r ? r.t : 'Report'; }
     default: return 'Bin Card Pro';
