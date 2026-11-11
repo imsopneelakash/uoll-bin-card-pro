@@ -1,0 +1,11 @@
+{
+  "appId": "com.uoll.bincardpro",
+  "appName": "Bin Card Pro",
+  "webDir": "www",
+  "server": { "androidScheme": "https" },
+  "android": { "allowMixedContent": false },
+  "plugins": {
+    "SplashScreen": { "launchAutoHide": true, "launchShowDuration": 700, "backgroundColor": "#FFFFFF", "showSpinner": false },
+    "StatusBar": { "overlaysWebView": false, "style": "DARK", "backgroundColor": "#14582a" }
+  }
+}
