@@ -132,7 +132,6 @@ header.bar{padding:calc(10px + env(safe-area-inset-top)) 14px 10px;border-bottom
 .tabs button svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .tabs button.on{color:var(--pri);background:#e6f2ea;border-bottom:0}
 .tabs button[data-n]:not([data-n=""])::after{content:attr(data-n);position:absolute;top:1px;left:calc(50% + 6px);background:var(--err);color:#fff;border-radius:99px;font-size:10px;line-height:16px;min-width:16px;padding:0 4px;text-align:center}
-#tabUsers{display:none!important}
 main.wrap{padding-bottom:calc(96px + env(safe-area-inset-bottom))}
 .back:not(.grow){display:none}
 .crumb{flex-wrap:wrap}
@@ -1942,7 +1941,8 @@ const TAB_ICONS = {
   prod: '<path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/>',
   loc: '<path d="M12 21s7-6.2 7-11a7 7 0 10-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/>',
   verify: '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/>',
-  reports: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'
+  reports: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+  users: '<path d="M17 21v-2a4 4 0 00-4-4H7a4 4 0 00-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M21 21v-2a4 4 0 00-3-3.9M16 3.1a4 4 0 010 7.8"/>'
 };
 document.querySelectorAll('.tabs button').forEach(b => {
   const ic = TAB_ICONS[b.dataset.tab]; if (!ic) return;
@@ -1957,7 +1957,7 @@ function fillAccount(){
   $('#acctIni').textContent = ini; $('#acctAv').textContent = ini;
   $('#acUsers').style.display = isAdmin() ? '' : 'none';
   $('#acLoc').style.display = isAdmin() ? '' : 'none';
-  $('#tabLoc').classList.toggle('hidden', isAdmin());
+  $('#tabLoc').classList.remove('hidden');
   $('#drName').textContent = nm; $('#drRole').textContent = me.role; const lg = document.querySelector('header.bar .logo'); if (lg) $('#drLogo').src = lg.src;
   $('#verLine').textContent = 'Version ' + APP_VERSION + (IS_NATIVE ? ' (Android app)' : ' (web)');
 }
