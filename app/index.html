@@ -197,6 +197,53 @@ select[size] option{padding:10px 8px;border-radius:8px}
 .d-leg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
 @media (min-width:700px){.d-grid{grid-template-columns:repeat(4,1fr)}}
 @media print{.d-hero{box-shadow:none}}
+
+/* ---- Dashboard v2 ---- */
+.dx-top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:16px 0 14px}
+.dx-top h2{font-size:22px;line-height:1.2}
+.dx-top p{color:var(--mut);font-size:14px;margin-top:2px}
+.dx-act{display:flex;gap:8px;align-items:center}
+.dx-pill{background:#fff;border:1px solid var(--line);border-radius:12px;padding:9px 14px;font-size:13.5px;color:var(--mut)}
+.btn.dx-ref{display:inline-flex;align-items:center;gap:8px;background:#fff;color:var(--ink);border:1px solid var(--line);box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.dx-ref svg{width:18px;height:18px;stroke:var(--pri);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.dx-kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.dx-k{position:relative;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px 14px 12px;min-width:0}
+.dx-k .lb{display:block;font-size:13px;color:var(--mut);font-weight:600;padding-right:44px;min-height:34px}
+.dx-k b{display:block;font-size:24px;line-height:1.15;margin-top:6px;letter-spacing:-.3px;white-space:nowrap}
+.dx-k small{display:block;font-size:12.5px;color:var(--mut);margin-top:2px}
+.dx-k .ic{position:absolute;top:12px;right:12px;width:36px;height:36px;border-radius:12px;background:#e3f3e8;display:flex;align-items:center;justify-content:center}
+.dx-k .ic svg{width:19px;height:19px;stroke:var(--pri);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.dx-k.in b{color:var(--pri)}.dx-k.out b{color:#c05a00}
+.dx-k.out .ic{background:#fdebd8}.dx-k.out .ic svg{stroke:#c05a00}
+.dx-k.neu .ic{background:#e6f1f7}.dx-k.neu .ic svg{stroke:#157a99}
+.dx-k.bad .ic{background:#fdecea}.dx-k.bad .ic svg{stroke:var(--err)}.dx-k.bad b{color:var(--err)}
+.dx-two{display:grid;gap:0 18px}
+.dx-two>div{min-width:0}
+.dx-wh{display:block;width:100%;text-align:left;background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px;cursor:pointer;color:inherit}
+.dx-wh .r{display:flex;justify-content:space-between;gap:8px;font-weight:700}
+.dx-wh .r span:last-child{color:var(--pri);white-space:nowrap}
+.dx-wh small{display:block;color:var(--mut);font-size:12.5px;margin:2px 0 8px}
+.dx-wh .tr{display:block;height:9px;background:#e9f0eb;border-radius:99px;overflow:hidden}
+.dx-wh .fl{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--pri),#4cb36a)}
+.dx-tbl{display:none}
+.pl{display:inline-block;border-radius:99px;padding:3px 10px;font-size:12px;font-weight:700;white-space:nowrap}
+.pl.in{background:#e3f3e8;color:var(--pri)}.pl.out{background:#fdebd8;color:#c05a00}.pl.neu{background:#e6f1f7;color:#157a99}
+@media (min-width:700px){.dx-kpis{grid-template-columns:repeat(4,1fr)}.dx-feed{display:none}.dx-tbl{display:block}.d-attn{flex-wrap:wrap;overflow:visible}}
+@media (min-width:1000px){.dx-two{grid-template-columns:1.1fr 1fr}}
+.d-seg button{white-space:nowrap}.d-sec{flex-wrap:wrap}
+.dx-two .d-panel svg{max-height:230px}
+/* ---- Sidebar on wide screens (phones keep the bottom bar) ---- */
+@media (min-width:900px){
+  header.bar{padding:10px 20px}
+  .bar-in{max-width:none;margin:0}
+  .tabs{top:60px;bottom:0;right:auto;width:232px;flex-direction:column;justify-content:flex-start;align-items:stretch;gap:4px;padding:14px 12px;border-top:0;border-right:1px solid var(--line);box-shadow:none;overflow-y:auto}
+  .tabs button{flex:none;flex-direction:row;justify-content:flex-start;gap:12px;padding:12px 14px;font-size:14.5px;text-align:left;width:100%}
+  .tabs button svg{width:22px;height:22px}
+  .tabs button[data-n]:not([data-n=""])::after{position:static;margin-left:auto}
+  main.wrap{max-width:none;margin:0 0 0 232px;padding:0 max(28px,calc((100vw - 232px - 1120px)/2)) 40px}
+  #offline{margin-left:232px}
+  #toast{bottom:24px}
+}
 </style>
 </head>
 <body>
@@ -1506,6 +1553,19 @@ const feedHtml = list => list.length ? list.map(r => {
 }).join('') : '<div class="empty" style="padding:14px">No activity yet.</div>';
 const tileHtml = (key, label, ic) => `<button class="d-tile" data-go="${key}"><svg viewBox="0 0 24 24" aria-hidden="true">${DASH_ICON[ic]}</svg>${label}</button>`;
 
+const DX_ICON = {
+  tag: '<path d="M20.6 13.4l-7.2 7.2a2 2 0 01-2.8 0L3 13V3h10l7.6 7.6a2 2 0 010 2.8z"/><circle cx="7.5" cy="7.5" r="1.2"/>',
+  layers: '<path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/>',
+  prod: DASH_ICON.prod, wh: DASH_ICON.wh,
+  in: '<path d="M12 5v14M6 13l6 6 6-6"/>', out: '<path d="M12 19V5M6 11l6-6 6 6"/>',
+  wo: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>', ret: '<path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 010 12h-3"/>'
+};
+const dxk = (ic, label, val, sub, cls = '') => `<div class="dx-k ${cls}"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true">${DX_ICON[ic]}</svg></span><span class="lb">${label}</span><b>${val}</b><small>${sub}</small></div>`;
+const recTbl = list => list.length ? `<div class="scroll"><table><thead><tr><th>Transaction</th><th>Product</th><th>Shelf</th><th class="n">Quantity</th><th>By</th><th>When</th></tr></thead><tbody>${list.map(r => {
+  const dir = r.type === 'in' ? 'in' : r.type === 'out' ? 'out' : 'neu', sign = dir === 'in' ? '+' : dir === 'out' ? '-' : '=';
+  return `<tr><td><span class="pl ${dir}">${esc(KIND_LBL[r.kind] || KIND_LBL[r.type] || r.kind)}</span></td><td>${esc(r.product)}</td><td>${esc(r.shelf)}</td><td class="n"><b>${sign}${n0(r.qty)} pcs</b></td><td>${esc(r.by_name || '')}</td><td>${esc(fmtD(r.t))} ${esc(fmtT(r.t))}</td></tr>`;
+}).join('')}</tbody></table></div>` : '<div class="empty" style="padding:14px">No activity yet.</div>';
+
 async function renderDashboard(el){
   const { data, error } = await db.rpc('dashboard_data', { p_days: dbDays });
   if (error) throw error;
@@ -1530,9 +1590,18 @@ async function renderDashboard(el){
   const t = d.totals || {}, td = d.today || {}, a = d.attn || {}, wh = d.warehouses || [], top = d.top || [], low = d.low || [], series = d.series || [];
   const maxW = Math.max(1, ...wh.map(w => nz(w.pcs))), maxT = Math.max(1, ...top.map(x => nz(x.qty)));
   const chip = (cls, n, label, go1) => `<button class="d-chip ${nz(n) ? cls : 'good'}" ${go1}><b>${n0(n)}</b><span>${label}</span></button>`;
-  el.innerHTML = `<div class="d-hero"><small>${esc(today)}</small><div class="hi">${greet}, ${esc(first)}</div>
-      <small>Total stock value (at MRP)</small><div class="big">${money(t.value)}</div>
-      <div class="sub2"><div><b>${n0(t.pcs)}</b><small>pcs in stock</small></div><div><b>${n0(t.products)}</b><small>products</small></div><div><b>${n0(wh.length)}</b><small>warehouses</small></div></div></div>
+  el.innerHTML = `<div class="dx-top"><div><h2>${greet}, ${esc(first)}</h2><p>Here is your warehouse and stock activity overview.</p></div>
+      <div class="dx-act"><span class="dx-pill">${esc(today)}</span><button class="btn dx-ref" id="dxRef"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 10-2.3 5.7M20 5v6h-6"/></svg>Refresh</button></div></div>
+    <div class="dx-kpis">
+      ${dxk('tag', 'Stock value (MRP)', money(t.value), 'All warehouses combined')}
+      ${dxk('layers', 'Total stock on hand', n0(t.pcs) + ' pcs', 'Across ' + n0(wh.length) + ' warehouses')}
+      ${dxk('prod', 'Products', n0(t.products), 'In the catalogue')}
+      ${dxk('wh', 'Warehouses', n0(wh.length), 'Active warehouses')}
+      ${dxk('in', 'Stock in today', n0(td.in_pcs) + ' pcs', money(td.in_value), 'in')}
+      ${dxk('out', 'Issued today', n0(td.out_pcs) + ' pcs', money(td.out_value), 'out')}
+      ${dxk('wo', 'Written off today', n0(td.wo_pcs) + ' pcs', money(td.wo_value), nz(td.wo_pcs) ? 'bad' : '')}
+      ${dxk('ret', 'Returned today', n0(td.ret_pcs) + ' pcs', money(td.ret_value), 'neu')}
+    </div>
 
     <div class="d-sec">Needs attention</div>
     <div class="d-attn">
@@ -1542,19 +1611,14 @@ async function renderDashboard(el){
       ${chip('warn', a.unaudited, 'Entries not audited', 'data-rep="audit"')}
     </div>
 
-    <div class="d-sec">Today</div>
-    <div class="d-grid">
-      <div class="d-k in"><span>Stock in</span><b>${n0(td.in_pcs)} pcs</b><small>${money(td.in_value)}</small></div>
-      <div class="d-k out"><span>Issued to locations</span><b>${n0(td.out_pcs)} pcs</b><small>${money(td.out_value)}</small></div>
-      <div class="d-k ${nz(td.wo_pcs) ? 'bad' : ''}"><span>Written off</span><b>${n0(td.wo_pcs)} pcs</b><small>${money(td.wo_value)}</small></div>
-      <div class="d-k neu"><span>Returned from locations</span><b>${n0(td.ret_pcs)} pcs</b><small>${money(td.ret_value)}</small></div>
-    </div>
-
+    <div class="dx-two"><div>
     <div class="d-sec">Stock in and issued <span class="d-seg">${[7, 14, 30].map(x => `<button data-days="${x}" class="${dbDays === x ? 'on' : ''}">${x} days</button>`).join('')}</span></div>
     <div class="d-panel">${dashChart(series)}<div class="d-leg"><span><i style="background:var(--pri)"></i>Stock in</span><span><i style="background:#e08a00"></i>Issued</span></div></div>
 
-    <div class="d-sec">Stock by warehouse</div>
-    <div class="d-panel">${wh.length ? wh.map(w => `<div class="d-hb" data-wh="${w.id}" data-name="${esc(w.name)}"><span class="nm">${esc(w.name)}</span><span class="tr"><span class="fl" style="display:block;width:${Math.max(2, nz(w.pcs) / maxW * 100).toFixed(0)}%"></span></span><span class="vl">${n0(w.pcs)} pcs</span></div>`).join('') : '<div class="empty" style="padding:10px">No warehouses yet.</div>'}</div>
+    </div><div>
+    <div class="d-sec">Warehouse stock overview <small style="font-weight:400;color:var(--mut)">Tap to open shelves</small></div>
+    ${wh.length ? wh.map(w => { const share = nz(t.pcs) ? Math.round(nz(w.pcs) / nz(t.pcs) * 100) : 0; return `<button class="dx-wh" data-wh="${w.id}" data-name="${esc(w.name)}"><span class="r"><span>${esc(w.name)}</span><span>${n0(w.pcs)} pcs</span></span><small>${share}% of total stock${w.value != null ? ' &middot; ' + money(w.value) : ''}</small><span class="tr"><span class="fl" style="width:${Math.max(2, nz(w.pcs) / maxW * 100).toFixed(0)}%"></span></span></button>`; }).join('') : '<div class="empty">No warehouses yet.</div>'}
+    </div></div>
 
     <div class="d-sec">Top issued products (30 days)</div>
     <div class="d-panel">${top.length ? top.map(x => `<div class="d-hb" style="cursor:default"><span class="nm" title="${esc(x.name)}">${esc(x.name)}</span><span class="tr"><span class="fl" style="display:block;width:${Math.max(3, nz(x.qty) / maxT * 100).toFixed(0)}%;background:linear-gradient(90deg,#e08a00,#f3b34c)"></span></span><span class="vl">${n0(x.qty)}</span></div>`).join('') : '<div class="empty" style="padding:10px">No issues in the last 30 days.</div>'}</div>
@@ -1562,14 +1626,15 @@ async function renderDashboard(el){
     ${low.length ? `<div class="d-sec">Low stock <button class="btn ghost" data-rep="reorder" style="padding:4px 10px;font-size:13px">Reorder suggestion</button></div>
     <div class="d-panel">${low.map(x => `<div class="d-feed"><div class="d-fi out">!</div><div class="t"><b>${esc(x.name)}</b><small>Minimum ${n0(x.min)} pcs</small></div><div class="q" style="color:var(--err)">${n0(x.stock)} pcs</div></div>`).join('')}</div>` : ''}
 
-    <div class="d-sec">Recent activity</div><div class="d-panel">${feedHtml(d.recent || [])}</div>
+    <div class="d-sec">Recent stock activity</div><div class="d-panel dx-feed">${feedHtml(d.recent || [])}</div><div class="d-panel dx-tbl">${recTbl(d.recent || [])}</div>
 
     <div class="d-sec">Quick access</div>
     <div class="d-tiles">${tileHtml('wh', 'Warehouses', 'wh')}${tileHtml('prod', 'Products', 'prod')}${tileHtml('loc', 'Locations', 'loc')}${tileHtml('reports', 'Reports', 'rep')}</div>`;
   bindGo();
   el.querySelectorAll('[data-rep]').forEach(b => b.onclick = () => go({ t: 'rep', rep: b.dataset.rep }));
   el.querySelectorAll('[data-days]').forEach(b => b.onclick = () => { dbDays = parseInt(b.dataset.days, 10); render(); });
-  el.querySelectorAll('.d-hb[data-wh]').forEach(b => b.onclick = () => go({ t: 'shelves', wh: { id: b.dataset.wh, name: b.dataset.name } }));
+  const rf = $('#dxRef'); if (rf) rf.onclick = () => render();
+  el.querySelectorAll('.d-hb[data-wh],.dx-wh[data-wh]').forEach(b => b.onclick = () => go({ t: 'shelves', wh: { id: b.dataset.wh, name: b.dataset.name } }));
 }
 
 /* ---------- Warehouse stock overview (master / admin) ---------- */
