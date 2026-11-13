@@ -234,6 +234,15 @@ select[size] option{padding:10px 8px;border-radius:8px}
   main.wrap>*{max-width:1280px;margin-left:auto;margin-right:auto}
   #toast{bottom:24px}
 }
+.tab-foot{margin-top:auto;padding:14px 12px 4px;border-top:1px solid var(--line);font-size:12px;line-height:1.5;color:var(--mut);text-align:center}
+.tab-foot b{font-weight:700;color:var(--ink)}
+.about{max-width:560px;margin:0 auto;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:28px 22px;text-align:center}
+.about img{width:110px;margin:0 auto 10px;display:block}
+.about h2{margin:0 0 2px;font-size:22px}
+.about .ver{color:var(--mut);font-size:14px;margin-bottom:18px}
+.about .row2{border-top:1px solid var(--line);padding:12px 0;font-size:15px}
+.about .row2 small{display:block;color:var(--mut);font-size:12px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px}
+.about .cp{margin-top:6px;color:var(--mut);font-size:13px}
 @media print{#navScrim{display:none!important}.tabs{display:none!important}main.wrap{margin:0!important;width:auto!important}main.wrap>*{max-width:none!important}}
 </style>
 </head>
@@ -263,7 +272,7 @@ select[size] option{padding:10px 8px;border-radius:8px}
     <button class="ib" id="acctBtn" aria-label="Account"><span id="acctIni"></span></button>
   </div></header>
   <div id="offline" class="hidden" role="status">You are offline. Changes cannot be saved until the connection returns.</div>
-  <nav class="tabs"><button data-tab="dash" class="on">Dashboard</button><button data-tab="wh">Warehouses</button><button data-tab="prod">Products</button><button data-tab="loc" id="tabLoc">Locations</button><button data-tab="verify" id="tabVerify" class="hidden">Verification</button><button data-tab="reports" id="tabReports" class="hidden">Reports</button><button data-tab="users" id="tabUsers" class="hidden">Users</button></nav>
+  <nav class="tabs"><button data-tab="dash" class="on">Dashboard</button><button data-tab="wh">Warehouses</button><button data-tab="prod">Products</button><button data-tab="loc" id="tabLoc">Locations</button><button data-tab="verify" id="tabVerify" class="hidden">Verification</button><button data-tab="reports" id="tabReports" class="hidden">Reports</button><button data-tab="users" id="tabUsers" class="hidden">Users</button><button data-tab="about">About</button><div class="tab-foot">&copy; 2026 Akash Rahman.<br>All rights reserved.</div></nav>
   <div id="navScrim"></div>
   <main class="wrap" id="view"></main>
 </section>
@@ -421,7 +430,7 @@ $('#loginForm').addEventListener('submit', async e => {
 $('#logout').addEventListener('click', async () => { await db.auth.signOut(); me = null; showLogin(); });
 
 /* ---------- Views ---------- */
-function go(v, isBack){ document.body.classList.remove('nav-open'); navUpdate(v, isBack); view = v; document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === (v.t === 'prod' ? 'prod' : (v.t === 'loc' || v.t === 'locdetail') ? 'loc' : v.t === 'users' ? 'users' : v.t === 'verify' ? 'verify' : v.t === 'dash' ? 'dash' : (v.t === 'wh' || v.t === 'shelves' || v.t === 'shelf' || v.t === 'count' || v.t === 'wcount' || v.t === 'whstock' || v.t === 'bincard') ? 'wh' : (v.t === 'reports' || v.t === 'rep') ? 'reports' : 'wh'))); render(); window.scrollTo(0, 0); updateBar(); }
+function go(v, isBack){ document.body.classList.remove('nav-open'); navUpdate(v, isBack); view = v; document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === (v.t === 'prod' ? 'prod' : (v.t === 'loc' || v.t === 'locdetail') ? 'loc' : v.t === 'users' ? 'users' : v.t === 'about' ? 'about' : v.t === 'verify' ? 'verify' : v.t === 'dash' ? 'dash' : (v.t === 'wh' || v.t === 'shelves' || v.t === 'shelf' || v.t === 'count' || v.t === 'wcount' || v.t === 'whstock' || v.t === 'bincard') ? 'wh' : (v.t === 'reports' || v.t === 'rep') ? 'reports' : 'wh'))); render(); window.scrollTo(0, 0); updateBar(); }
 async function render(){
   const el = $('#view');
   refreshBadge();
@@ -433,6 +442,7 @@ async function render(){
     else if (view.t === 'prod') await renderProducts(el);
     else if (view.t === 'loc') await renderLocations(el);
     else if (view.t === 'users') await renderUsers(el);
+    else if (view.t === 'about') renderAbout(el);
     else if (view.t === 'verify') await renderVerify(el);
     else if (view.t === 'wcount') await renderWhCount(el);
     else if (view.t === 'whstock') await renderWhStock(el);
@@ -1900,7 +1910,7 @@ async function renderProducts(el){
 }
 
 /* ---------- App shell: navigation, account sheet, native hooks ---------- */
-const ROOTS = ['dash', 'wh', 'prod', 'loc', 'verify', 'reports', 'users'];
+const ROOTS = ['dash', 'wh', 'prod', 'loc', 'verify', 'reports', 'users', 'about'];
 let navStack = [];
 const vKey = v => [v.t, v.wh && v.wh.id, v.shelf && v.shelf.id, v.loc && v.loc.id, v.rep].join('|');
 function navUpdate(v, isBack){
@@ -1913,7 +1923,7 @@ function navUpdate(v, isBack){
 function viewTitle(v){
   switch (v.t) {
     case 'dash': return 'Dashboard'; case 'wh': return 'Warehouses'; case 'prod': return 'Products'; case 'loc': return 'Locations';
-    case 'verify': return 'Count verification'; case 'reports': return 'Reports'; case 'users': return 'Users';
+    case 'verify': return 'Count verification'; case 'reports': return 'Reports'; case 'users': return 'Users'; case 'about': return 'About';
     case 'shelves': return v.wh ? v.wh.name : 'Shelves';
     case 'shelf': return v.shelf ? 'Shelf ' + v.shelf.name : 'Shelf';
     case 'count': return 'Physical count'; case 'whstock': return v.wh ? 'Stock - ' + v.wh.name : 'Warehouse stock'; case 'wcount': return v.wh ? 'Count - ' + v.wh.name : 'Warehouse count'; case 'bincard': return 'Bin card';
@@ -1940,6 +1950,22 @@ function handleBack(fromPop){
 window.addEventListener('popstate', () => handleBack(true));
 $('#navBack').onclick = () => { if (navStack.length) history.back(); else handleBack(false); };
 
+const DEV_NAME = 'Akash Rahman';
+const DEV_EMAIL = '';   // optional: put your email here to show it on the About screen
+const DEV_PHONE = '';   // optional: put your phone here to show it on the About screen
+function renderAbout(el){
+  const logo = document.querySelector('.login-logo');
+  const src = logo ? logo.getAttribute('src') : '';
+  el.innerHTML = '<div class="about">' +
+    (src ? '<img alt="UOLL" src="' + src + '">' : '') +
+    '<h2>UOLL Bin Card Pro</h2>' +
+    '<div class="ver">Version ' + esc(APP_VERSION) + (IS_NATIVE ? ' (Android app)' : ' (web)') + '</div>' +
+    '<div class="row2"><small>Designed &amp; developed by</small><b>' + esc(DEV_NAME) + '</b></div>' +
+    (DEV_EMAIL ? '<div class="row2"><small>Email</small>' + esc(DEV_EMAIL) + '</div>' : '') +
+    (DEV_PHONE ? '<div class="row2"><small>Phone</small>' + esc(DEV_PHONE) + '</div>' : '') +
+    '<div class="row2 cp">&copy; 2026 ' + esc(DEV_NAME) + '. All rights reserved.</div>' +
+  '</div>';
+}
 const TAB_ICONS = {
   users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.5a3.5 3.5 0 010 7M18 14c2.4.6 3.5 2.4 3.5 5"/>',
   dash: '<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',
@@ -1947,7 +1973,8 @@ const TAB_ICONS = {
   prod: '<path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/>',
   loc: '<path d="M12 21s7-6.2 7-11a7 7 0 10-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/>',
   verify: '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/>',
-  reports: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'
+  reports: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+  about: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><circle cx="12" cy="7.8" r=".6"/>'
 };
 document.querySelectorAll('.tabs button').forEach(b => {
   const ic = TAB_ICONS[b.dataset.tab]; if (!ic) return;
