@@ -132,6 +132,7 @@ header.bar{padding:calc(10px + env(safe-area-inset-top)) 14px 10px;border-bottom
 .tabs button svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .tabs button.on{color:var(--pri);background:#e6f2ea;border-bottom:0}
 .tabs button[data-n]:not([data-n=""])::after{content:attr(data-n);position:absolute;top:1px;left:calc(50% + 6px);background:var(--err);color:#fff;border-radius:99px;font-size:10px;line-height:16px;min-width:16px;padding:0 4px;text-align:center}
+#tabUsers{display:none!important}
 main.wrap{padding-bottom:calc(96px + env(safe-area-inset-bottom))}
 .back:not(.grow){display:none}
 .crumb{flex-wrap:wrap}
@@ -154,31 +155,45 @@ select[size] option{padding:10px 8px;border-radius:8px}
 @media (prefers-reduced-motion:reduce){dialog{animation:none}.spin{animation-duration:2s}button:active,.item:active{transform:none}}
 
 /* ---------- Dashboard ---------- */
-.d-hero{background:linear-gradient(135deg,var(--pri-d),var(--pri) 62%,#2e9a52);color:#fff;border-radius:20px;padding:18px;margin-bottom:14px;box-shadow:0 8px 20px rgba(20,88,42,.25)}
-.d-hero small{display:block;opacity:.85;font-size:13px}
-.d-hero .hi{font-size:19px;font-weight:700;margin:2px 0 8px}
-.d-hero .big{font-size:30px;font-weight:800;letter-spacing:-.5px;line-height:1.1}
-.d-hero .sub2{display:flex;gap:22px;margin-top:12px}
-.d-hero .sub2 b{display:block;font-size:17px}
-.d-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px}
-.d-k{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px}
-.d-k span{color:var(--mut);font-size:13px;display:block}
-.d-k b{font-size:20px;display:block;margin-top:2px}
-.d-k small{color:var(--mut);font-size:12.5px}
-.d-k.in b{color:var(--pri)}.d-k.out b{color:#c05a00}.d-k.bad b{color:var(--err)}.d-k.neu b{color:#157a99}
-.d-sec{font-size:15px;font-weight:700;margin:20px 2px 8px;display:flex;justify-content:space-between;align-items:center;gap:8px}
-.d-attn{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
-.d-attn::-webkit-scrollbar{display:none}
-.d-chip{flex:0 0 auto;min-width:138px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px 14px;text-align:left;cursor:pointer;color:inherit}
-.d-chip b{font-size:22px;display:block}.d-chip span{font-size:12.5px;color:var(--mut)}
-.d-chip.warn{background:#fff4e0;border-color:#e6b45c}.d-chip.bad{background:#fdecea;border-color:#e8a7a2}.d-chip.good{background:#e8f5ec;border-color:#a8d5b4}
-.d-panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px}
-.d-hb{display:flex;align-items:center;gap:10px;margin:9px 0;cursor:pointer}
-.d-hb .nm{flex:0 0 36%;font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.d-hb .tr{flex:1;background:#e9f0eb;border-radius:99px;height:10px;overflow:hidden}
-.d-hb .fl{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--pri),#4cb36a)}
-.d-hb .vl{flex:0 0 auto;font-size:13px;color:var(--mut);min-width:58px;text-align:right}
-.d-feed{display:flex;gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid #eef2ee}
+#view .d-eye{font-size:12px;letter-spacing:.12em;font-weight:700;color:var(--pri);text-transform:uppercase;margin-top:6px}
+#view h2.d-hi{font-size:28px;line-height:1.15;margin:6px 0 4px;letter-spacing:-.3px}
+.d-subt{color:var(--mut);margin:0 0 14px;font-size:15px}
+.d-act{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}
+.d-date{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 16px;font-size:14px}
+.d-refresh{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 18px;font-weight:700;color:var(--pri-d);cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.d-refresh svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.d-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:6px}
+.d-k{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:6px;text-align:left;color:inherit;font:inherit;cursor:default;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.d-k[data-go],.d-k[data-rep]{cursor:pointer}
+.d-k .top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.d-k .lb{font-size:13.5px;font-weight:700;color:#2d4636;line-height:1.25}
+.d-k .ic{width:38px;height:38px;border-radius:12px;background:#e5f3ea;display:flex;align-items:center;justify-content:center;flex:none}
+.d-k .ic svg{width:19px;height:19px;stroke:var(--pri);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.d-k b{font-size:30px;line-height:1.1;color:#143f22;font-weight:800;letter-spacing:-.5px}
+.d-k small{color:var(--mut);font-size:13px;line-height:1.3}
+.d-k.bad .ic{background:#fdecea}.d-k.bad .ic svg{stroke:var(--err)}.d-k.bad b{color:var(--err)}
+.d-k.warn .ic{background:#fff1da}.d-k.warn .ic svg{stroke:#c05a00}.d-k.warn b{color:#a85000}
+.d-sec{font-size:17px;font-weight:800;margin:24px 2px 10px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.d-sec small{font-weight:500;color:var(--mut);font-size:13px}
+.d-panel{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.d-two{display:grid;grid-template-columns:1fr;gap:12px}
+.d-hb{margin:12px 0;cursor:pointer}
+.d-hb .r1{display:flex;justify-content:space-between;gap:10px;font-weight:700}
+.d-hb .r2{color:var(--mut);font-size:12.5px;margin:2px 0 6px}
+.d-hb .tr{display:block;background:#e6efe9;border-radius:99px;height:9px;overflow:hidden}
+.d-hb .fl{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#2e9a52,#7fd29a)}
+.d-hb.amb .fl{background:linear-gradient(90deg,#e08a00,#f3b34c)}
+.d-foot{margin-top:10px;color:var(--mut);font-size:13px}
+.d-tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.d-tile{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px;text-align:left;cursor:pointer;display:flex;gap:12px;align-items:center;font-weight:700;color:inherit;font-size:14.5px}
+.d-tile .ic{width:40px;height:40px;border-radius:12px;background:#e5f3ea;display:flex;align-items:center;justify-content:center;flex:none}
+.d-tile svg{width:20px;height:20px;stroke:var(--pri);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.d-seg{display:inline-flex;background:#e6eee8;border-radius:99px;padding:3px}
+.d-seg button{border:0;background:none;padding:5px 12px;border-radius:99px;font-size:12.5px;font-weight:600;color:var(--mut);cursor:pointer}
+.d-seg button.on{background:#fff;color:var(--pri);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.d-leg{display:flex;gap:14px;font-size:12.5px;color:var(--mut);margin-top:6px}
+.d-leg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.d-feed{display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid #eef2ee}
 .d-feed:last-child{border-bottom:0}
 .d-fi{width:36px;height:36px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:800;flex:none}
 .d-fi.in{background:#e3f3e8;color:var(--pri)}.d-fi.out{background:#fdebd8;color:#c05a00}.d-fi.neu{background:#e6f1f7;color:#157a99}
@@ -186,84 +201,31 @@ select[size] option{padding:10px 8px;border-radius:8px}
 .d-feed .t b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .d-feed .t small{color:var(--mut);font-size:12px}
 .d-feed .q{font-weight:700;white-space:nowrap}
-.d-tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-.d-tile{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;text-align:left;cursor:pointer;display:flex;gap:10px;align-items:center;font-weight:600;color:inherit}
-.d-tile svg{width:22px;height:22px;stroke:var(--pri);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
-.d-seg{display:inline-flex;background:#e6eee8;border-radius:99px;padding:3px}
-.d-seg button{border:0;background:none;padding:5px 12px;border-radius:99px;font-size:12.5px;font-weight:600;color:var(--mut);cursor:pointer}
-.d-seg button.on{background:#fff;color:var(--pri);box-shadow:0 1px 3px rgba(0,0,0,.12)}
-.d-leg{display:flex;gap:14px;font-size:12.5px;color:var(--mut);margin-top:6px}
-.d-leg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
-@media (min-width:700px){.d-grid{grid-template-columns:repeat(4,1fr)}}
-@media print{.d-hero{box-shadow:none}}
+.d-tbl{display:none;width:100%;border-collapse:collapse;font-size:14px}
+.d-tbl th{font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);text-align:left;padding:10px 12px;background:#f1f5f2}
+.d-tbl th:first-child{border-radius:12px 0 0 12px}.d-tbl th:last-child{border-radius:0 12px 12px 0}
+.d-tbl td{padding:12px;border-bottom:1px solid #eef2ee;vertical-align:middle}
+.d-tbl tr:last-child td{border-bottom:0}
+.d-tbl .n{text-align:right;font-weight:800}
+.d-tag{display:inline-block;padding:4px 12px;border-radius:99px;font-size:12.5px;font-weight:700;white-space:nowrap}
+.d-tag.in{background:#e3f3e8;color:#1b6b36}.d-tag.out{background:#fdebd8;color:#a85000}.d-tag.bad{background:#fdecea;color:#b3261e}.d-tag.neu{background:#e6f1f7;color:#157a99}
+.d-mob{display:block}
+@media (min-width:700px){.d-grid{grid-template-columns:repeat(3,1fr)}.d-tbl{display:table}.d-mob{display:none}.d-tiles{grid-template-columns:repeat(4,1fr)}}
+@media (min-width:1100px){.d-grid{grid-template-columns:repeat(5,1fr)}.d-two{grid-template-columns:1fr 1fr}}
+#eQ.picked,[data-q].picked{font-weight:700;color:var(--pri-d);background:#e8f5ec;border-color:var(--pri)}
 
-/* ---- Dashboard v2 ---- */
-.dx-top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:16px 0 14px}
-.dx-top h2{font-size:22px;line-height:1.2}
-.dx-top p{color:var(--mut);font-size:14px;margin-top:2px}
-.dx-act{display:flex;gap:8px;align-items:center}
-.dx-pill{background:#fff;border:1px solid var(--line);border-radius:12px;padding:9px 14px;font-size:13.5px;color:var(--mut)}
-.btn.dx-ref{display:inline-flex;align-items:center;gap:8px;background:#fff;color:var(--ink);border:1px solid var(--line);box-shadow:0 1px 3px rgba(0,0,0,.06)}
-.dx-ref svg{width:18px;height:18px;stroke:var(--pri);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.dx-kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-.dx-k{position:relative;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px 14px 12px;min-width:0}
-.dx-k .lb{display:block;font-size:13px;color:var(--mut);font-weight:600;padding-right:44px;min-height:34px}
-.dx-k b{display:block;font-size:24px;line-height:1.15;margin-top:6px;letter-spacing:-.3px;white-space:nowrap}
-.dx-k small{display:block;font-size:12.5px;color:var(--mut);margin-top:2px}
-.dx-k .ic{position:absolute;top:12px;right:12px;width:36px;height:36px;border-radius:12px;background:#e3f3e8;display:flex;align-items:center;justify-content:center}
-.dx-k .ic svg{width:19px;height:19px;stroke:var(--pri);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.dx-k.in b{color:var(--pri)}.dx-k.out b{color:#c05a00}
-.dx-k.out .ic{background:#fdebd8}.dx-k.out .ic svg{stroke:#c05a00}
-.dx-k.neu .ic{background:#e6f1f7}.dx-k.neu .ic svg{stroke:#157a99}
-.dx-k.bad .ic{background:#fdecea}.dx-k.bad .ic svg{stroke:var(--err)}.dx-k.bad b{color:var(--err)}
-.dx-two{display:grid;gap:0 18px}
-.dx-two>div{min-width:0}
-.dx-wh{display:block;width:100%;text-align:left;background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px;cursor:pointer;color:inherit}
-.dx-wh .r{display:flex;justify-content:space-between;gap:8px;font-weight:700}
-.dx-wh .r span:last-child{color:var(--pri);white-space:nowrap}
-.dx-wh small{display:block;color:var(--mut);font-size:12.5px;margin:2px 0 8px}
-.dx-wh .tr{display:block;height:9px;background:#e9f0eb;border-radius:99px;overflow:hidden}
-.dx-wh .fl{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--pri),#4cb36a)}
-.dx-tbl{display:none}
-.pl{display:inline-block;border-radius:99px;padding:3px 10px;font-size:12px;font-weight:700;white-space:nowrap}
-.pl.in{background:#e3f3e8;color:var(--pri)}.pl.out{background:#fdebd8;color:#c05a00}.pl.neu{background:#e6f1f7;color:#157a99}
-@media (min-width:700px){.dx-kpis{grid-template-columns:repeat(4,1fr)}.dx-feed{display:none}.dx-tbl{display:block}.d-attn{flex-wrap:wrap;overflow:visible}}
-@media (min-width:1000px){.dx-two{grid-template-columns:1.1fr 1fr}}
-.d-seg button{white-space:nowrap}.d-sec{flex-wrap:wrap}
-.dx-two .d-panel svg{max-height:230px}
-/* ---- Sidebar on wide screens (phones keep the bottom bar) ---- */
+/* ---------- Sidebar on wide screens (phones keep the bottom bar) ---------- */
 @media (min-width:900px){
-  header.bar{padding:10px 20px}
-  .bar-in{max-width:none;margin:0}
-  .tabs{top:60px;bottom:0;right:auto;width:232px;flex-direction:column;justify-content:flex-start;align-items:stretch;gap:4px;padding:14px 12px;border-top:0;border-right:1px solid var(--line);box-shadow:none;overflow-y:auto}
-  .tabs button{flex:none;flex-direction:row;justify-content:flex-start;gap:12px;padding:12px 14px;font-size:14.5px;text-align:left;width:100%}
-  .tabs button svg{width:22px;height:22px}
+  .bar-in{max-width:none}
+  .tabs{top:60px;bottom:0;left:0;right:auto;width:270px;flex-direction:column;justify-content:flex-start;align-items:stretch;gap:6px;padding:16px 14px;border-top:0;border-right:1px solid var(--line);box-shadow:none;overflow-y:auto}
+  .tabs button{flex:none;flex-direction:row;justify-content:flex-start;gap:14px;font-size:15.5px;padding:13px 16px;border-radius:14px;text-align:left}
+  .tabs button svg{width:24px;height:24px}
   .tabs button[data-n]:not([data-n=""])::after{position:static;margin-left:auto}
-  main.wrap{max-width:none;margin:0 0 0 232px;padding:0 max(28px,calc((100vw - 232px - 1120px)/2)) 40px}
-  #offline{margin-left:232px}
+  main.wrap{max-width:none!important;margin:0 0 0 270px;padding:22px 32px 40px}
+  main.wrap>*{max-width:1280px;margin-left:auto;margin-right:auto}
   #toast{bottom:24px}
 }
-/* ---- Phone: navigation drawer instead of bottom bar ---- */
-.dr-h{display:none}
-#menuBtn{display:none}
-.ib.has-n::after{content:"";position:absolute;top:4px;right:4px;width:10px;height:10px;border-radius:50%;background:#ffb300;border:2px solid var(--pri)}
-@media (max-width:899px){
-  #menuBtn{display:inline-flex}
-  .tabs{top:0;bottom:0;right:auto;left:0;width:min(290px,84vw);flex-direction:column;justify-content:flex-start;align-items:stretch;gap:4px;padding:calc(14px + env(safe-area-inset-top)) 12px calc(14px + env(safe-area-inset-bottom));border-top:0;border-right:1px solid var(--line);box-shadow:6px 0 24px rgba(0,0,0,.18);overflow-y:auto;z-index:31;transform:translateX(-105%);visibility:hidden;transition:transform .22s ease,visibility 0s linear .22s}
-  body.nav-open .tabs{transform:none;visibility:visible;transition:transform .22s ease,visibility 0s}
-  .tabs button{flex:none;flex-direction:row;justify-content:flex-start;gap:14px;padding:13px 14px;font-size:15px;text-align:left;width:100%}
-  .tabs button svg{width:22px;height:22px}
-  .tabs button[data-n]:not([data-n=""])::after{position:static;margin-left:auto}
-  .dr-h{display:flex;align-items:center;gap:12px;padding:6px 6px 14px;margin-bottom:8px;border-bottom:1px solid var(--line)}
-  .dr-h img{width:44px;height:44px;border-radius:50%;object-fit:cover;flex:none}
-  .dr-h b{display:block;font-size:15px}
-  .dr-h small{display:block;color:var(--mut);font-size:12.5px;text-transform:capitalize}
-  #navScrim{position:fixed;inset:0;background:rgba(10,30,15,.45);z-index:30;opacity:0;pointer-events:none;transition:opacity .2s}
-  body.nav-open #navScrim{opacity:1;pointer-events:auto}
-  main.wrap{padding-bottom:calc(28px + env(safe-area-inset-bottom))}
-  #toast{bottom:calc(20px + env(safe-area-inset-bottom))}
-}
-@media (min-width:900px){#navScrim{display:none}}
+@media print{.tabs{display:none!important}main.wrap{margin:0!important;width:auto!important}main.wrap>*{max-width:none!important}}
 </style>
 </head>
 <body>
@@ -285,21 +247,21 @@ select[size] option{padding:10px 8px;border-radius:8px}
 
 <section id="app" class="hidden">
   <header class="bar"><div class="bar-in">
-    <button class="ib" id="menuBtn" aria-label="Menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
     <button class="ib hidden" id="navBack" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
     <img class="logo" alt="" src="data:image/jpeg;base64,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">
     <h1 id="barTitle">Bin Card Pro</h1>
     <button class="ib" id="acctBtn" aria-label="Account"><span id="acctIni"></span></button>
   </div></header>
   <div id="offline" class="hidden" role="status">You are offline. Changes cannot be saved until the connection returns.</div>
-  <nav class="tabs"><div class="dr-h"><img id="drLogo" alt=""><div><b id="drName"></b><small id="drRole"></small></div></div></nav>
-  <div id="navScrim"></div>
+  <nav class="tabs"><button data-tab="dash" class="on">Dashboard</button><button data-tab="wh">Warehouses</button><button data-tab="prod">Products</button><button data-tab="loc" id="tabLoc">Locations</button><button data-tab="verify" id="tabVerify" class="hidden">Verification</button><button data-tab="reports" id="tabReports" class="hidden">Reports</button><button data-tab="users" id="tabUsers" class="hidden">Users</button></nav>
   <main class="wrap" id="view"></main>
 </section>
 
 <dialog id="acct">
   <div class="acct-h"><div class="av big" id="acctAv"></div><div><b id="whoName"></b><div class="mut" id="whoSub"></div><span class="role" id="roleTag"></span></div></div>
   <div id="updBox"></div>
+  <button class="item" id="acLoc" type="button" style="display:none;margin-bottom:10px"><span class="grow"><b>Locations</b><span class="sub">Outlets, stores and other places</span></span></button>
+  <button class="item" id="acUsers" type="button" style="display:none;margin-bottom:12px"><span class="grow"><b>Users</b><span class="sub">Manage employee and admin accounts</span></span></button>
   <div class="mut" id="verLine" style="margin-bottom:6px"></div>
   <div class="row"><button class="btn light" id="acClose" type="button">Close</button><button class="btn" id="logout" type="button" style="background:var(--err)">Sign out</button></div>
 </dialog>
@@ -431,6 +393,9 @@ async function enter(){
   me = data;
   $('#whoSub').textContent = me.full_name || me.email || '';
   $('#roleTag').textContent = me.role;
+  $('#tabUsers').classList.toggle('hidden', !isAdmin());
+  $('#tabReports').classList.toggle('hidden', !isAdmin());
+  $('#tabVerify').classList.toggle('hidden', !isAdmin());
   $('#login').classList.add('hidden'); $('#app').classList.remove('hidden');
   fillAccount(); navStack = []; go({ t: 'dash' }); checkUpdate();
 }
@@ -445,7 +410,7 @@ $('#loginForm').addEventListener('submit', async e => {
 $('#logout').addEventListener('click', async () => { await db.auth.signOut(); me = null; showLogin(); });
 
 /* ---------- Views ---------- */
-function go(v, isBack){ document.body.classList.remove('nav-open'); navUpdate(v, isBack); view = v; document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === tabOf(v.t))); render(); window.scrollTo(0, 0); updateBar(); }
+function go(v, isBack){ navUpdate(v, isBack); view = v; document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === (v.t === 'prod' ? 'prod' : (v.t === 'loc' || v.t === 'locdetail') ? 'loc' : v.t === 'users' ? 'users' : v.t === 'verify' ? 'verify' : v.t === 'dash' ? 'dash' : (v.t === 'wh' || v.t === 'shelves' || v.t === 'shelf' || v.t === 'count' || v.t === 'wcount' || v.t === 'whstock' || v.t === 'bincard') ? 'wh' : (v.t === 'reports' || v.t === 'rep') ? 'reports' : 'wh'))); render(); window.scrollTo(0, 0); updateBar(); }
 async function render(){
   const el = $('#view');
   refreshBadge();
@@ -578,7 +543,7 @@ function entryDialog(type, shelf, products, stockMap, dests){
       const t = q.value.trim().toLowerCase(), keep = sel.value;
       const rows = products.filter(p => !t || p.name.toLowerCase().includes(t) || p.code.toLowerCase().includes(t));
       sel.innerHTML = rows.map(p => `<option value="${p.id}">${esc(p.code)} - ${esc(p.name)}</option>`).join('');
-      if (rows.some(p => p.id === keep)) sel.value = keep; else if (rows.length) sel.value = rows[0].id;
+      if (rows.some(p => p.id === keep)) sel.value = keep; else sel.selectedIndex = -1;
       calc();
     };
     const dw = $('#eDW'), ds = $('#eDS');
@@ -623,7 +588,7 @@ function entryDialog(type, shelf, products, stockMap, dests){
       d.close('ok');
     };
     d.onclose = () => res(d.returnValue === 'ok');
-    d.returnValue = ''; fill(); d.showModal();
+    d.returnValue = ''; comboPick(q, sel).reset(); fill(); d.showModal();
   });
 }
 
@@ -634,6 +599,39 @@ function typeLbl(x){
   if (n.startsWith('Write-off (')) return 'Write-off';
   if (x.entry_type === 'in' && n.startsWith('Return from location:')) return 'Return from location';
   return TYPE_LABEL[x.entry_type] || x.entry_type;
+}
+
+/* ---------- Count rows: OK / Wrong feedback (employees: result only, master / admin: with variance) ---------- */
+function countRowUI(el, list, vals, res, rpcName, scope){
+  const timers = {};
+  const upd = () => {
+    let n = 0, ok = 0, bad = 0;
+    list.forEach(p => {
+      const v = vals[p.id], has = v != null && v !== '', r = res[p.id], fresh = has && r && r.v === String(v);
+      if (has) n++;
+      if (fresh && !r.err) { if (r.ok) ok++; else bad++; }
+      const c = el.querySelector(`tr[data-id="${p.id}"] .rs`); if (!c) return;
+      c.innerHTML = !has ? '<span class="badge b-none">Not counted</span>'
+        : !fresh ? '<span class="badge b-count">Checking...</span>'
+        : r.err ? '<span class="badge b-none">Could not check</span>'
+        : r.ok ? '<span class="badge b-ok">OK</span>'
+        : '<span class="badge b-bad">Wrong</span>' + (r.diff != null ? `<small style="display:block;color:var(--err);font-weight:600">Variance ${r.diff > 0 ? '+' : ''}${n0(r.diff)}</small>` : '');
+    });
+    $('#csum').innerHTML = `<b style="color:var(--pri)">OK: ${ok}</b> &middot; <b style="color:var(--err)">Wrong: ${bad}</b> &middot; Entered: ${n} &middot; Not counted: ${list.length - n}`;
+  };
+  const schedule = id => {
+    clearTimeout(timers[id]);
+    const v = vals[id];
+    if (v == null || v === '') { delete res[id]; return; }
+    timers[id] = setTimeout(async () => {
+      const cur = String(vals[id]);
+      const { data, error } = await db.rpc(rpcName, Object.assign({}, scope, { p_product: id, p_counted: parseInt(cur, 10) || 0 }));
+      if (String(vals[id]) !== cur) return;
+      res[id] = (error || !data) ? { v: cur, err: true } : { v: cur, ok: !!data.ok, diff: data.diff == null ? null : Number(data.diff) };
+      upd();
+    }, 600);
+  };
+  return { upd, schedule };
 }
 
 async function renderCount(el){
@@ -648,12 +646,9 @@ async function renderCount(el){
   const waiting = all.filter(r => r.state === 'pending').length, done = all.filter(r => r.state === 'verified').length;
   const known = new Set(all.map(r => r.product_id));
   const list = rows.map(r => ({ id: r.product_id, code: r.product_code, name: r.product_name, recount: r.state === 'recount', note: r.recount_note }));
-  const vals = {};
-  const upd = () => {
-    let n = 0;
-    list.forEach(p => { const v = vals[p.id]; const has = v != null && v !== ''; if (has) n++; const c = el.querySelector(`tr[data-id="${p.id}"] .rs`); if (c) c.innerHTML = has ? '<span class="badge b-count">Entered</span>' : '<span class="badge b-none">Not counted</span>'; });
-    $('#csum').innerHTML = `<b style="color:var(--pri)">Entered: ${n}</b> &middot; Not counted: ${list.length - n}`;
-  };
+  const vals = {}, res = {};
+  const ui = countRowUI(el, list, vals, res, 'count_check', { p_shelf: shelf.id });
+  const upd = ui.upd;
   const draw = () => {
     const extra = prods.filter(p => p.is_active && !known.has(p.id) && !list.some(x => x.id === p.id));
     el.innerHTML = `<button class="back" id="bk">&larr; Shelf ${esc(shelf.name)}</button>
@@ -666,7 +661,7 @@ async function renderCount(el){
       <div class="row" style="margin-top:12px"><select id="xp" aria-label="Add a product that is not on the list"><option value="">Add a product that is not on the list...</option>${extra.map(p => `<option value="${p.id}">${esc(p.code)} - ${esc(p.name)}</option>`).join('')}</select><button class="btn light" id="xa">Add</button></div>
       <div class="cbar"><span id="csum"></span><button class="btn" id="csave">Submit for verification</button></div>`;
     $('#bk').onclick = () => go({ t: 'shelf', wh, shelf });
-    el.querySelectorAll('input.ci').forEach(i => i.oninput = () => { vals[i.closest('tr').dataset.id] = i.value; upd(); });
+    el.querySelectorAll('input.ci').forEach(i => i.oninput = () => { const id = i.closest('tr').dataset.id; vals[id] = i.value; upd(); ui.schedule(id); });
     $('#xa').onclick = () => { const id = $('#xp').value; if (!id) return; const p = prods.find(x => x.id === id); list.push({ id, code: p.code, name: p.name, recount: false }); draw(); };
     $('#csave').onclick = save;
     upd();
@@ -697,12 +692,9 @@ async function renderWhCount(el){
   const waiting = all.filter(r => r.state === 'pending').length, done = all.filter(r => r.state === 'verified').length;
   const known = new Set(all.map(r => r.product_id));
   const list = rows.map(r => ({ id: r.product_id, code: r.product_code, name: r.product_name, recount: r.state === 'recount', note: r.recount_note }));
-  const vals = {};
-  const upd = () => {
-    let n = 0;
-    list.forEach(p => { const v = vals[p.id]; const has = v != null && v !== ''; if (has) n++; const c = el.querySelector(`tr[data-id="${p.id}"] .rs`); if (c) c.innerHTML = has ? '<span class="badge b-count">Entered</span>' : '<span class="badge b-none">Not counted</span>'; });
-    $('#csum').innerHTML = `<b style="color:var(--pri)">Entered: ${n}</b> &middot; Not counted: ${list.length - n}`;
-  };
+  const vals = {}, res = {};
+  const ui = countRowUI(el, list, vals, res, 'wcount_check', { p_wh: wh.id });
+  const upd = ui.upd;
   const draw = () => {
     const extra = prods.filter(p => p.is_active && !known.has(p.id) && !list.some(x => x.id === p.id));
     el.innerHTML = `<button class="back" id="bk">&larr; ${esc(wh.name)}</button>
@@ -715,7 +707,7 @@ async function renderWhCount(el){
       <div class="row" style="margin-top:12px"><select id="xp" aria-label="Add a product that is not on the list"><option value="">Add a product that is not on the list...</option>${extra.map(p => `<option value="${p.id}">${esc(p.code)} - ${esc(p.name)}</option>`).join('')}</select><button class="btn light" id="xa">Add</button></div>
       <div class="cbar"><span id="csum"></span><button class="btn" id="csave">Submit for verification</button></div>`;
     $('#bk').onclick = () => go({ t: 'shelves', wh });
-    el.querySelectorAll('input.ci').forEach(i => i.oninput = () => { vals[i.closest('tr').dataset.id] = i.value; upd(); });
+    el.querySelectorAll('input.ci').forEach(i => i.oninput = () => { const id = i.closest('tr').dataset.id; vals[id] = i.value; upd(); ui.schedule(id); });
     $('#xa').onclick = () => { const id = $('#xp').value; if (!id) return; const p = prods.find(x => x.id === id); list.push({ id, code: p.code, name: p.name, recount: false }); draw(); };
     $('#csave').onclick = save;
     upd();
@@ -797,6 +789,23 @@ async function renderShelf(el){
   });
 }
 
+/* ---------- Product picker: the chosen product moves into the search box ---------- */
+function comboPick(q, s){
+  if (s._combo) return s._combo;
+  let kb = false;
+  const picked = () => q.classList.contains('picked');
+  const label = () => { const o = s.selectedIndex >= 0 ? s.options[s.selectedIndex] : null; return o ? o.textContent : ''; };
+  const collapse = () => { if (s.selectedIndex < 0) return; q.value = label(); s.style.display = 'none'; q.classList.add('picked'); };
+  const expand = () => { s.style.display = ''; q.classList.remove('picked'); };
+  s.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); collapse(); } else kb = true; });
+  s.addEventListener('change', () => { if (kb) { kb = false; return; } setTimeout(collapse, 0); });
+  q.addEventListener('focus', () => { if (picked()) { q.value = ''; expand(); q.dispatchEvent(new Event('input')); } });
+  const away = () => setTimeout(() => { if (!picked() && s.selectedIndex >= 0 && document.activeElement !== q && document.activeElement !== s && s.isConnected) collapse(); }, 220);
+  q.addEventListener('blur', away); s.addEventListener('blur', away);
+  s._combo = { collapse, expand, reset: () => { s.selectedIndex = -1; q.value = ''; expand(); } };
+  return s._combo;
+}
+
 /* ---------- Corrections, write-off, returns ---------- */
 const noteShown = x => {
   const n = x.note || '';
@@ -841,11 +850,12 @@ function bindPick(api, info, emptyMsg){
     const t = q.value.trim().toLowerCase(), keep = s.value;
     const rows = list.filter(p => !t || p.name.toLowerCase().includes(t) || p.code.toLowerCase().includes(t));
     s.innerHTML = rows.map(p => `<option value="${p.id}">${esc(p.code)} - ${esc(p.name)}</option>`).join('');
-    if (rows.some(p => p.id === keep)) s.value = keep; else if (rows.length) s.value = rows[0].id;
+    if (rows.some(p => p.id === keep)) s.value = keep; else s.selectedIndex = -1;
     show();
   };
+  const combo = comboPick(q, s);
   q.oninput = fill; s.onchange = show;
-  return { set: l => { list = l; fill(); }, val: () => s.value };
+  return { set: l => { list = l; combo.reset(); fill(); }, val: () => s.value };
 }
 function writeOffDialog(shelf, list, stockMap){
   return formDlg('Write-off - Shelf ' + shelf.name, pickHtml + `
@@ -1543,13 +1553,24 @@ async function renderWhVerify(el){
 
 /* ---------- Dashboard ---------- */
 let dbDays = 7;
-const DASH_ICON = {
+const DI = {
+  value: '<path d="M12 3v18"/><path d="M16.5 7.5c0-1.7-2-3-4.5-3S7.5 5.8 7.5 7.5s2 3 4.5 3 4.5 1.3 4.5 3-2 3-4.5 3-4.5-1.3-4.5-3"/>',
+  box: '<path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/>',
+  list: '<path d="M4 6h16M4 12h16M4 18h10"/>',
   wh: '<path d="M3 21V9l9-5 9 5v12"/><path d="M8 21v-7h8v7"/>',
-  prod: '<path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/>',
+  alert: '<path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/>',
+  up: '<path d="M12 19V5M5 12l7-7 7 7"/>',
+  down: '<path d="M12 5v14M19 12l-7 7-7-7"/>',
+  check: '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/>',
+  doc: '<path d="M7 3h8l4 4v14H7z"/><path d="M15 3v4h4M10 12h6M10 16h6"/>',
+  trash: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',
+  refresh: '<path d="M21 12a9 9 0 11-3-6.7M21 4v5h-5"/>',
   loc: '<path d="M12 21s7-6.2 7-11a7 7 0 10-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/>',
   rep: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'
 };
+const ico = k => `<svg viewBox="0 0 24 24" aria-hidden="true">${DI[k]}</svg>`;
 const KIND_LBL = { receipt: 'Stock in', issue: 'Issued', return: 'Return', writeoff: 'Write-off', xfer_in: 'Shelf transfer in', xfer_out: 'Shelf transfer out', reversal: 'Reversal', count: 'Physical count', opening: 'Opening balance' };
+const KIND_TAG = { receipt: 'in', return: 'in', xfer_in: 'in', issue: 'out', xfer_out: 'out', writeoff: 'bad', reversal: 'neu', count: 'neu', opening: 'neu' };
 function dashChart(series){
   const W = 320, H = 150, pad = 22, n = Math.max(series.length, 1);
   const max = Math.max(1, ...series.map(s => Math.max(nz(s.in), nz(s.out))));
@@ -1563,95 +1584,80 @@ function dashChart(series){
   });
   return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Stock in and issued per day"><line x1="5" y1="${H - pad}" x2="${W - 5}" y2="${H - pad}" style="stroke:var(--line)"/>${g}</svg>`;
 }
+const placeOf = r => (r.warehouse ? esc(r.warehouse) + ' / ' : '') + 'Shelf ' + esc(r.shelf);
 const feedHtml = list => list.length ? list.map(r => {
   const dir = r.type === 'in' ? 'in' : r.type === 'out' ? 'out' : 'neu', sign = dir === 'in' ? '+' : dir === 'out' ? '-' : '=';
   const lbl = KIND_LBL[r.kind] || KIND_LBL[r.type] || r.kind;
-  return `<div class="d-feed"><div class="d-fi ${dir}">${dir === 'in' ? '&#8595;' : dir === 'out' ? '&#8593;' : '='}</div><div class="t"><b>${esc(r.product)}</b><small>${esc(lbl)} &middot; Shelf ${esc(r.shelf)}${r.by_name ? ' &middot; ' + esc(r.by_name) : ''} &middot; ${esc(fmtD(r.t))} ${esc(fmtT(r.t))}</small></div><div class="q">${sign}${n0(r.qty)}</div></div>`;
+  return `<div class="d-feed"><div class="d-fi ${dir}">${dir === 'in' ? '&#8595;' : dir === 'out' ? '&#8593;' : '='}</div><div class="t"><b>${esc(r.product)}</b><small>${esc(lbl)} &middot; ${placeOf(r)}${r.by_name ? ' &middot; ' + esc(r.by_name) : ''} &middot; ${esc(fmtD(r.t))} ${esc(fmtT(r.t))}</small></div><div class="q">${sign}${n0(r.qty)}</div></div>`;
 }).join('') : '<div class="empty" style="padding:14px">No activity yet.</div>';
-const tileHtml = (key, label, ic) => `<button class="d-tile" data-go="${key}"><svg viewBox="0 0 24 24" aria-hidden="true">${DASH_ICON[ic]}</svg>${label}</button>`;
-
-const DX_ICON = {
-  tag: '<path d="M20.6 13.4l-7.2 7.2a2 2 0 01-2.8 0L3 13V3h10l7.6 7.6a2 2 0 010 2.8z"/><circle cx="7.5" cy="7.5" r="1.2"/>',
-  layers: '<path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/>',
-  prod: DASH_ICON.prod, wh: DASH_ICON.wh,
-  in: '<path d="M12 5v14M6 13l6 6 6-6"/>', out: '<path d="M12 19V5M6 11l6-6 6 6"/>',
-  wo: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>', ret: '<path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 010 12h-3"/>'
-};
-const dxk = (ic, label, val, sub, cls = '') => `<div class="dx-k ${cls}"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true">${DX_ICON[ic]}</svg></span><span class="lb">${label}</span><b>${val}</b><small>${sub}</small></div>`;
-const recTbl = list => list.length ? `<div class="scroll"><table><thead><tr><th>Transaction</th><th>Product</th><th>Shelf</th><th class="n">Quantity</th><th>By</th><th>When</th></tr></thead><tbody>${list.map(r => {
-  const dir = r.type === 'in' ? 'in' : r.type === 'out' ? 'out' : 'neu', sign = dir === 'in' ? '+' : dir === 'out' ? '-' : '=';
-  return `<tr><td><span class="pl ${dir}">${esc(KIND_LBL[r.kind] || KIND_LBL[r.type] || r.kind)}</span></td><td>${esc(r.product)}</td><td>${esc(r.shelf)}</td><td class="n"><b>${sign}${n0(r.qty)} pcs</b></td><td>${esc(r.by_name || '')}</td><td>${esc(fmtD(r.t))} ${esc(fmtT(r.t))}</td></tr>`;
-}).join('')}</tbody></table></div>` : '<div class="empty" style="padding:14px">No activity yet.</div>';
+const recentTable = (list, showBy) => list.length ? `<table class="d-tbl"><thead><tr><th>Transaction</th><th>Product</th><th>Warehouse / Shelf</th>${showBy ? '<th>By</th>' : ''}<th>When</th><th style="text-align:right">Quantity</th></tr></thead><tbody>
+  ${list.map(r => { const dir = r.type === 'in' ? '+' : r.type === 'out' ? '-' : ''; const k = r.kind || r.type; return `<tr><td><span class="d-tag ${KIND_TAG[k] || 'neu'}">${esc(KIND_LBL[k] || k)}</span></td><td><b>${esc(r.product)}</b></td><td>${placeOf(r)}</td>${showBy ? `<td>${esc(r.by_name || '')}</td>` : ''}<td style="white-space:nowrap">${esc(fmtD(r.t))} ${esc(fmtT(r.t))}</td><td class="n">${dir}${n0(r.qty)} pcs</td></tr>`; }).join('')}</tbody></table>` : '';
+const recentBlock = (list, showBy) => `<div class="d-panel">${recentTable(list, showBy)}<div class="d-mob">${feedHtml(list)}</div></div>`;
+const kcard = (label, ic, value, cap, o = {}) => `<${o.attr ? 'button' : 'div'} class="d-k ${o.cls || ''}" ${o.attr || ''}><span class="top"><span class="lb">${label}</span><span class="ic">${ico(ic)}</span></span><b>${value}</b><small>${cap}</small></${o.attr ? 'button' : 'div'}>`;
+const tileHtml = (key, label, ic) => `<button class="d-tile" data-go="${key}"><span class="ic">${ico(ic)}</span>${label}</button>`;
 
 async function renderDashboard(el){
   const { data, error } = await db.rpc('dashboard_data', { p_days: dbDays });
   if (error) throw error;
   const d = data || {};
-  const h = new Date().getHours(), greet = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
   const first = String(me.full_name || me.email || '').split(/\s+/)[0];
-  const today = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-  const bindGo = () => el.querySelectorAll('[data-go]').forEach(b => b.onclick = () => go({ t: b.dataset.go }));
+  const dateTxt = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  const head = `<div class="d-eye">UOLL &middot; Inventory operations</div><h2 class="d-hi">Welcome back, ${esc(first)}</h2>
+    <p class="d-subt">${d.role === 'admin' ? 'Here is your warehouse and stock activity overview.' : 'Here is your work for today.'}</p>
+    <div class="d-act"><span class="d-date">${esc(dateTxt)}</span><button class="d-refresh" id="dRef">${ico('refresh')} Refresh</button></div>`;
+  const bind = () => {
+    $('#dRef').onclick = () => render();
+    el.querySelectorAll('[data-go]').forEach(b => b.onclick = () => go({ t: b.dataset.go }));
+    el.querySelectorAll('[data-rep]').forEach(b => b.onclick = () => go({ t: 'rep', rep: b.dataset.rep }));
+    el.querySelectorAll('[data-days]').forEach(b => b.onclick = () => { dbDays = parseInt(b.dataset.days, 10); render(); });
+    el.querySelectorAll('.d-hb[data-wh]').forEach(b => b.onclick = () => go({ t: 'shelves', wh: { id: b.dataset.wh, name: b.dataset.name } }));
+  };
 
   if (d.role !== 'admin') {
     const rc = nz(d.recount), aw = nz(d.awaiting);
-    el.innerHTML = `<div class="d-hero"><small>${esc(today)}</small><div class="hi">${greet}, ${esc(first)}</div><div class="big">${n0(d.today_entries)} <span style="font-size:16px;font-weight:600">entries today</span></div></div>
-      <div class="d-attn">
-        <button class="d-chip ${rc ? 'bad' : 'good'}" data-go="wh"><b>${n0(rc)}</b><span>${rc ? 'Products to recount' : 'No recount needed'}</span></button>
-        <button class="d-chip ${aw ? 'warn' : 'good'}" data-go="wh"><b>${n0(aw)}</b><span>Counts awaiting verification</span></button>
-      </div>
-      <div class="d-sec">My recent activity</div><div class="d-panel">${feedHtml(d.recent || [])}</div>
-      <div class="d-sec">Quick access</div><div class="d-tiles">${tileHtml('wh', 'Warehouses', 'wh')}${tileHtml('prod', 'Products', 'prod')}${tileHtml('loc', 'Locations', 'loc')}</div>`;
-    bindGo(); return;
+    el.innerHTML = head + `<div class="d-grid">
+      ${kcard('Entries today', 'doc', n0(d.today_entries), 'Entries you recorded today')}
+      ${kcard('Products to recount', 'alert', n0(rc), rc ? 'Open Physical count to recount them' : 'Nothing to recount', { cls: rc ? 'bad' : '', attr: 'data-go="wh"' })}
+      ${kcard('Counts awaiting verification', 'check', n0(aw), 'Waiting for a master or admin', { cls: aw ? 'warn' : '', attr: 'data-go="wh"' })}</div>
+      <div class="d-sec">My recent activity <small>Your latest bin-card entries</small></div>${recentBlock(d.recent || [], false)}
+      <div class="d-sec">Quick access <small>Existing modules</small></div><div class="d-tiles">${tileHtml('wh', 'Warehouses', 'wh')}${tileHtml('prod', 'Products', 'box')}${tileHtml('loc', 'Locations', 'loc')}</div>`;
+    bind(); return;
   }
 
   const t = d.totals || {}, td = d.today || {}, a = d.attn || {}, wh = d.warehouses || [], top = d.top || [], low = d.low || [], series = d.series || [];
   const maxW = Math.max(1, ...wh.map(w => nz(w.pcs))), maxT = Math.max(1, ...top.map(x => nz(x.qty)));
-  const chip = (cls, n, label, go1) => `<button class="d-chip ${nz(n) ? cls : 'good'}" ${go1}><b>${n0(n)}</b><span>${label}</span></button>`;
-  el.innerHTML = `<div class="dx-top"><div><h2>${greet}, ${esc(first)}</h2><p>Here is your warehouse and stock activity overview.</p></div>
-      <div class="dx-act"><span class="dx-pill">${esc(today)}</span><button class="btn dx-ref" id="dxRef"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 10-2.3 5.7M20 5v6h-6"/></svg>Refresh</button></div></div>
-    <div class="dx-kpis">
-      ${dxk('tag', 'Stock value (MRP)', money(t.value), 'All warehouses combined')}
-      ${dxk('layers', 'Total stock on hand', n0(t.pcs) + ' pcs', 'Across ' + n0(wh.length) + ' warehouses')}
-      ${dxk('prod', 'Products', n0(t.products), 'In the catalogue')}
-      ${dxk('wh', 'Warehouses', n0(wh.length), 'Active warehouses')}
-      ${dxk('in', 'Stock in today', n0(td.in_pcs) + ' pcs', money(td.in_value), 'in')}
-      ${dxk('out', 'Issued today', n0(td.out_pcs) + ' pcs', money(td.out_value), 'out')}
-      ${dxk('wo', 'Written off today', n0(td.wo_pcs) + ' pcs', money(td.wo_value), nz(td.wo_pcs) ? 'bad' : '')}
-      ${dxk('ret', 'Returned today', n0(td.ret_pcs) + ' pcs', money(td.ret_value), 'neu')}
+  const verifyN = nz(a.pending) + nz(a.recount);
+  el.innerHTML = head + `<div class="d-grid">
+      ${kcard('Total stock value', 'value', money(t.value), 'At MRP, all warehouses')}
+      ${kcard('Total stock on hand', 'box', n0(t.pcs), 'pcs across all shelves')}
+      ${kcard('Products in stock', 'list', n0(t.products), 'Products with stock on hand')}
+      ${kcard('Warehouses', 'wh', n0(wh.length), n0(t.shelves) + ' active shelves', { attr: 'data-go="wh"' })}
+      ${kcard('Stock in today', 'up', n0(td.in_pcs) + ' pcs', money(td.in_value) + ' incoming')}
+      ${kcard('Issued today', 'down', n0(td.out_pcs) + ' pcs', 'Returned today: ' + n0(td.ret_pcs) + ' pcs')}
+      ${kcard('Written off today', 'trash', n0(td.wo_pcs) + ' pcs', money(td.wo_value), { cls: nz(td.wo_pcs) ? 'bad' : '', attr: 'data-rep="writeoff"' })}
+      ${kcard('Low stock alerts', 'alert', n0(a.low), 'At or below minimum', { cls: nz(a.low) ? 'bad' : '', attr: 'data-rep="reorder"' })}
+      ${kcard('Counts to verify', 'check', n0(verifyN), n0(a.recount) + ' waiting for recount', { cls: verifyN ? 'warn' : '', attr: 'data-go="verify"' })}
+      ${kcard('Entries not audited', 'doc', n0(a.unaudited), 'Bin-card entries to audit', { cls: nz(a.unaudited) ? 'warn' : '', attr: 'data-rep="audit"' })}</div>
+
+    <div class="d-sec">Warehouse stock overview <small>All shelves combined</small></div>
+    <div class="d-panel">${wh.length ? wh.map(w => `<div class="d-hb" data-wh="${w.id}" data-name="${esc(w.name)}"><div class="r1"><span>${esc(w.name)}</span><span>${n0(w.pcs)} pcs</span></div><div class="r2">Indicative stock value (MRP): ${money(w.value)}</div><span class="tr"><span class="fl" style="width:${Math.max(2, nz(w.pcs) / maxW * 100).toFixed(0)}%"></span></span></div>`).join('') : '<div class="empty" style="padding:10px">No warehouses yet.</div>'}
+      <div class="d-foot">Combined stock: <b>${n0(t.pcs)} pcs</b></div></div>
+
+    <div class="d-two">
+      <div><div class="d-sec">Stock in and issued <span class="d-seg">${[7, 14, 30].map(x => `<button data-days="${x}" class="${dbDays === x ? 'on' : ''}">${x} days</button>`).join('')}</span></div>
+        <div class="d-panel">${dashChart(series)}<div class="d-leg"><span><i style="background:var(--pri)"></i>Stock in</span><span><i style="background:#e08a00"></i>Issued</span></div></div></div>
+      <div><div class="d-sec">Top issued products <small>Last 30 days</small></div>
+        <div class="d-panel">${top.length ? top.map(x => `<div class="d-hb amb" style="cursor:default"><div class="r1"><span>${esc(x.name)}</span><span>${n0(x.qty)} pcs</span></div><span class="tr"><span class="fl" style="width:${Math.max(3, nz(x.qty) / maxT * 100).toFixed(0)}%"></span></span></div>`).join('') : '<div class="empty" style="padding:10px">No issues in the last 30 days.</div>'}</div></div>
     </div>
 
-    <div class="d-sec">Needs attention</div>
-    <div class="d-attn">
-      ${chip('warn', a.pending, 'Counts to verify', 'data-go="verify"')}
-      ${chip('bad', a.recount, 'Waiting for recount', 'data-go="verify"')}
-      ${chip('bad', a.low, 'Low stock products', 'data-rep="reorder"')}
-      ${chip('warn', a.unaudited, 'Entries not audited', 'data-rep="audit"')}
-    </div>
-
-    <div class="dx-two"><div>
-    <div class="d-sec">Stock in and issued <span class="d-seg">${[7, 14, 30].map(x => `<button data-days="${x}" class="${dbDays === x ? 'on' : ''}">${x} days</button>`).join('')}</span></div>
-    <div class="d-panel">${dashChart(series)}<div class="d-leg"><span><i style="background:var(--pri)"></i>Stock in</span><span><i style="background:#e08a00"></i>Issued</span></div></div>
-
-    </div><div>
-    <div class="d-sec">Warehouse stock overview <small style="font-weight:400;color:var(--mut)">Tap to open shelves</small></div>
-    ${wh.length ? wh.map(w => { const share = nz(t.pcs) ? Math.round(nz(w.pcs) / nz(t.pcs) * 100) : 0; return `<button class="dx-wh" data-wh="${w.id}" data-name="${esc(w.name)}"><span class="r"><span>${esc(w.name)}</span><span>${n0(w.pcs)} pcs</span></span><small>${share}% of total stock${w.value != null ? ' &middot; ' + money(w.value) : ''}</small><span class="tr"><span class="fl" style="width:${Math.max(2, nz(w.pcs) / maxW * 100).toFixed(0)}%"></span></span></button>`; }).join('') : '<div class="empty">No warehouses yet.</div>'}
-    </div></div>
-
-    <div class="d-sec">Top issued products (30 days)</div>
-    <div class="d-panel">${top.length ? top.map(x => `<div class="d-hb" style="cursor:default"><span class="nm" title="${esc(x.name)}">${esc(x.name)}</span><span class="tr"><span class="fl" style="display:block;width:${Math.max(3, nz(x.qty) / maxT * 100).toFixed(0)}%;background:linear-gradient(90deg,#e08a00,#f3b34c)"></span></span><span class="vl">${n0(x.qty)}</span></div>`).join('') : '<div class="empty" style="padding:10px">No issues in the last 30 days.</div>'}</div>
-
-    ${low.length ? `<div class="d-sec">Low stock <button class="btn ghost" data-rep="reorder" style="padding:4px 10px;font-size:13px">Reorder suggestion</button></div>
+    ${low.length ? `<div class="d-sec">Low stock alerts <button class="btn ghost" data-rep="reorder" style="padding:4px 12px;font-size:13px">Reorder suggestion</button></div>
     <div class="d-panel">${low.map(x => `<div class="d-feed"><div class="d-fi out">!</div><div class="t"><b>${esc(x.name)}</b><small>Minimum ${n0(x.min)} pcs</small></div><div class="q" style="color:var(--err)">${n0(x.stock)} pcs</div></div>`).join('')}</div>` : ''}
 
-    <div class="d-sec">Recent stock activity</div><div class="d-panel dx-feed">${feedHtml(d.recent || [])}</div><div class="d-panel dx-tbl">${recTbl(d.recent || [])}</div>
+    <div class="d-sec">Quick access <small>Existing modules</small></div>
+    <div class="d-tiles">${tileHtml('wh', 'Warehouses', 'wh')}${tileHtml('prod', 'Products', 'box')}${tileHtml('loc', 'Locations', 'loc')}${tileHtml('reports', 'Reports', 'rep')}</div>
 
-    <div class="d-sec">Quick access</div>
-    <div class="d-tiles">${tileHtml('wh', 'Warehouses', 'wh')}${tileHtml('prod', 'Products', 'prod')}${tileHtml('loc', 'Locations', 'loc')}${tileHtml('reports', 'Reports', 'rep')}</div>`;
-  bindGo();
-  el.querySelectorAll('[data-rep]').forEach(b => b.onclick = () => go({ t: 'rep', rep: b.dataset.rep }));
-  el.querySelectorAll('[data-days]').forEach(b => b.onclick = () => { dbDays = parseInt(b.dataset.days, 10); render(); });
-  const rf = $('#dxRef'); if (rf) rf.onclick = () => render();
-  el.querySelectorAll('.d-hb[data-wh],.dx-wh[data-wh]').forEach(b => b.onclick = () => go({ t: 'shelves', wh: { id: b.dataset.wh, name: b.dataset.name } }));
+    <div class="d-sec">Recent stock activity <small>Latest recorded bin-card entries</small></div>${recentBlock(d.recent || [], true)}`;
+  bind();
 }
 
 /* ---------- Warehouse stock overview (master / admin) ---------- */
@@ -1701,7 +1707,7 @@ const delConfirm = (kind, name) => confirm('Delete ' + kind + ' "' + name + '"?\
 /* ---------- Count verification (master / admin) ---------- */
 async function refreshBadge(){
   if (!me || !isAdmin()) return;
-  try { const { data } = await db.rpc('count_pending_total'); const b = document.querySelector('.tabs [data-tab="verify"]'); if (b) b.dataset.n = Number(data) > 0 ? String(Number(data)) : ''; const mb = $('#menuBtn'); if (mb) mb.classList.toggle('has-n', Number(data) > 0); } catch (e) {}
+  try { const { data } = await db.rpc('count_pending_total'); const b = $('#tabVerify'); if (b) b.dataset.n = Number(data) > 0 ? String(Number(data)) : ''; } catch (e) {}
 }
 const fmtDT = t => fmtD(t) + ' ' + fmtT(t);
 async function renderVerifyShelf(el){
@@ -1826,6 +1832,7 @@ async function repWCountRes(el){
 }
 
 /* ---------- Products ---------- */
+document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => go({ t: b.dataset.tab }));
 
 function productForm(p, cats, defCode){
   return new Promise(res => {
@@ -1907,11 +1914,9 @@ function viewTitle(v){
 function updateBar(){
   document.body.classList.toggle('wm-on', view.t === 'bincard');
   $('#navBack').classList.toggle('hidden', ROOTS.includes(view.t));
-  $('#menuBtn').classList.toggle('hidden', !ROOTS.includes(view.t));
   $('#barTitle').textContent = viewTitle(view);
 }
 function handleBack(fromPop){
-  if (document.body.classList.contains('nav-open')) { navOpen(false); return; }
   const d = document.querySelector('dialog[open]');
   if (d) { d.close(); if (fromPop && navStack.length) history.pushState(null, ''); return; }
   if (navStack.length) { go(navStack.pop(), true); return; }
@@ -1921,12 +1926,6 @@ function handleBack(fromPop){
   if (A && A.exitApp) A.exitApp();
 }
 window.addEventListener('popstate', () => handleBack(true));
-const navOpen = on => { document.body.classList.toggle('nav-open', on); $('#menuBtn').setAttribute('aria-expanded', on ? 'true' : 'false'); };
-$('#menuBtn').onclick = () => navOpen(!document.body.classList.contains('nav-open'));
-$('#navScrim').onclick = () => navOpen(false);
-(() => { let x0 = null, y0 = 0; const dr = $('.tabs');
-  dr.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; }, { passive: true });
-  dr.addEventListener('touchend', e => { if (x0 === null) return; const dx = e.changedTouches[0].clientX - x0, dy = Math.abs(e.changedTouches[0].clientY - y0); if (dx < -60 && dy < 50) navOpen(false); x0 = null; }, { passive: true }); })();
 $('#navBack').onclick = () => { if (navStack.length) history.back(); else handleBack(false); };
 
 const TAB_ICONS = {
@@ -1935,48 +1934,28 @@ const TAB_ICONS = {
   prod: '<path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/>',
   loc: '<path d="M12 21s7-6.2 7-11a7 7 0 10-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/>',
   verify: '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/>',
-  reports: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
-  users: '<path d="M17 21v-2a4 4 0 00-4-4H7a4 4 0 00-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M21 21v-2a4 4 0 00-3-3.9M16 3.1a4 4 0 010 7.8"/>'
+  reports: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'
 };
-/* ============ SIDEBAR MODULES ============
-   The sidebar (desktop) and the menu drawer (phone) are built from this list, so they always match.
-   To add a new module: add ONE entry here (admin:true = Master/Admin only; views = extra screens that belong to it),
-   then add its screen to render(). Nothing else needs to change. */
-const MODULES = [
-  { key: 'dash',    label: 'Dashboard',    icon: TAB_ICONS.dash },
-  { key: 'wh',      label: 'Warehouses',   icon: TAB_ICONS.wh, views: ['shelves', 'shelf', 'count', 'wcount', 'whstock', 'bincard'] },
-  { key: 'prod',    label: 'Products',     icon: TAB_ICONS.prod },
-  { key: 'loc',     label: 'Locations',    icon: TAB_ICONS.loc, views: ['locdetail'] },
-  { key: 'verify',  label: 'Verification', icon: TAB_ICONS.verify, admin: true },
-  { key: 'reports', label: 'Reports',      icon: TAB_ICONS.reports, admin: true, views: ['rep'] },
-  { key: 'users',   label: 'Users',        icon: TAB_ICONS.users, admin: true }
-];
-const tabOf = t => (MODULES.find(m => m.key === t || (m.views || []).includes(t)) || { key: 'wh' }).key;
-function buildNav(){
-  const nav = $('.tabs');
-  nav.querySelectorAll('button').forEach(b => b.remove());
-  MODULES.filter(m => !m.admin || isAdmin()).forEach(m => {
-    const b = document.createElement('button');
-    b.type = 'button'; b.dataset.tab = m.key;
-    b.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true">' + m.icon + '</svg><span class="lb">' + esc(m.label) + '</span>';
-    b.onclick = () => go({ t: m.key });
-    nav.appendChild(b);
-  });
-  nav.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.tab === tabOf(view.t)));
-}
+document.querySelectorAll('.tabs button').forEach(b => {
+  const ic = TAB_ICONS[b.dataset.tab]; if (!ic) return;
+  b.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true">' + ic + '</svg><span class="lb">' + esc(b.textContent) + '</span>';
+});
 
 function fillAccount(){
-  buildNav();
   const nm = me.full_name || me.email || '';
   $('#whoName').textContent = nm; $('#whoSub').textContent = me.email || '';
   $('#roleTag').textContent = me.role;
   const ini = nm.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('') || '?';
   $('#acctIni').textContent = ini; $('#acctAv').textContent = ini;
-  $('#drName').textContent = nm; $('#drRole').textContent = me.role; const lg = document.querySelector('header.bar .logo'); if (lg) $('#drLogo').src = lg.src;
+  $('#acUsers').style.display = isAdmin() ? '' : 'none';
+  $('#acLoc').style.display = isAdmin() ? '' : 'none';
+  $('#tabLoc').classList.toggle('hidden', isAdmin());
   $('#verLine').textContent = 'Version ' + APP_VERSION + (IS_NATIVE ? ' (Android app)' : ' (web)');
 }
 $('#acctBtn').onclick = () => $('#acct').showModal();
 $('#acClose').onclick = () => $('#acct').close();
+$('#acUsers').onclick = () => { $('#acct').close(); go({ t: 'users' }); };
+$('#acLoc').onclick = () => { $('#acct').close(); go({ t: 'loc' }); };
 $('#logout').addEventListener('click', () => $('#acct').close());
 
 function cmpVer(a, b){
