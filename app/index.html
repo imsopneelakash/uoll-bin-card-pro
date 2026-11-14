@@ -220,6 +220,10 @@ select[size] option{padding:10px 8px;border-radius:8px}
 .tabs button.on{background:#e3f1e8;color:var(--pri)}
 .tabs button[data-n]:not([data-n=""])::after{position:static;margin-left:auto}
 #navScrim{display:none;position:fixed;top:var(--hh,64px);right:0;bottom:0;left:0;background:rgba(10,30,15,.45);z-index:8}
+.nav-foot{margin-top:auto;padding:14px 8px 4px;border-top:1px solid var(--line);font-size:12.5px;color:var(--mut);text-align:center;line-height:1.55}
+.ab-row{display:flex;justify-content:space-between;gap:16px;padding:11px 0;border-bottom:1px solid #eef2ee;font-size:14.5px}
+.ab-row:last-child{border-bottom:0}.ab-row span{color:var(--mut)}.ab-row b{text-align:right}
+.ab-list{margin:0;padding-left:20px;line-height:1.8;font-size:14.5px}
 .tabs .subnav{display:flex;flex-direction:column;gap:2px;margin:-2px 0 6px 28px;padding-left:10px;border-left:2px solid #dbe7de}
 .tabs .subnav button{font-size:14px;font-weight:500;padding:9px 12px;gap:10px;color:var(--mut)}
 .tabs .subnav button::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.5;flex:none}
@@ -276,7 +280,7 @@ select[size] option{padding:10px 8px;border-radius:8px}
     <button class="ib" id="acctBtn" aria-label="Account"><span id="acctIni"></span></button>
   </div></header>
   <div id="offline" class="hidden" role="status">You are offline. Changes cannot be saved until the connection returns.</div>
-  <nav class="tabs"><button data-tab="dash" class="on">Dashboard</button><button data-tab="wh">Warehouses</button><button data-tab="inv" id="tabInv" class="hidden">Inventory</button><div class="subnav hidden" id="invSub"></div><button data-tab="prod">Products</button><button data-tab="loc" id="tabLoc">Locations</button><button data-tab="verify" id="tabVerify" class="hidden">Verification</button><button data-tab="reports" id="tabReports" class="hidden">Reports</button><button data-tab="users" id="tabUsers" class="hidden">Users</button></nav>
+  <nav class="tabs"><button data-tab="dash" class="on">Dashboard</button><button data-tab="wh">Warehouses</button><button data-tab="inv" id="tabInv" class="hidden">Inventory</button><div class="subnav hidden" id="invSub"></div><button data-tab="prod">Products</button><button data-tab="loc" id="tabLoc">Locations</button><button data-tab="verify" id="tabVerify" class="hidden">Verification</button><button data-tab="reports" id="tabReports" class="hidden">Reports</button><button data-tab="users" id="tabUsers" class="hidden">Users</button><button data-tab="about">About</button><div class="nav-foot">&copy; <span id="navYear">2026</span> Akash Rahman.<br>All rights reserved.</div></nav>
   <div id="navScrim"></div>
   <main class="wrap" id="view"></main>
 </section>
@@ -434,7 +438,7 @@ $('#loginForm').addEventListener('submit', async e => {
 $('#logout').addEventListener('click', async () => { await db.auth.signOut(); me = null; showLogin(); });
 
 /* ---------- Views ---------- */
-function go(v, isBack){ document.body.classList.remove('nav-open'); navUpdate(v, isBack); view = v; document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === (v.t === 'prod' ? 'prod' : (v.t === 'loc' || v.t === 'locdetail') ? 'loc' : v.t === 'users' ? 'users' : v.t === 'verify' ? 'verify' : v.t === 'dash' ? 'dash' : (v.t === 'inv' || v.t === 'invwh') ? 'inv' : (v.t === 'wh' || v.t === 'shelves' || v.t === 'shelf' || v.t === 'count' || v.t === 'wcount' || v.t === 'whstock' || v.t === 'bincard') ? 'wh' : (v.t === 'reports' || v.t === 'rep') ? 'reports' : 'wh'))); render(); window.scrollTo(0, 0); updateBar(); }
+function go(v, isBack){ document.body.classList.remove('nav-open'); navUpdate(v, isBack); view = v; document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === (v.t === 'prod' ? 'prod' : (v.t === 'loc' || v.t === 'locdetail') ? 'loc' : v.t === 'users' ? 'users' : v.t === 'verify' ? 'verify' : v.t === 'dash' ? 'dash' : v.t === 'about' ? 'about' : (v.t === 'inv' || v.t === 'invwh') ? 'inv' : (v.t === 'wh' || v.t === 'shelves' || v.t === 'shelf' || v.t === 'count' || v.t === 'wcount' || v.t === 'whstock' || v.t === 'bincard') ? 'wh' : (v.t === 'reports' || v.t === 'rep') ? 'reports' : 'wh'))); render(); window.scrollTo(0, 0); updateBar(); }
 async function render(){
   const el = $('#view');
   refreshBadge();
@@ -450,6 +454,7 @@ async function render(){
     else if (view.t === 'wcount') await renderWhCount(el);
     else if (view.t === 'whstock' || view.t === 'invwh') await renderWhStock(el);
     else if (view.t === 'inv') await renderInventory(el);
+    else if (view.t === 'about') renderAbout(el);
     else if (view.t === 'reports') await renderReports(el);
     else if (view.t === 'rep') await renderRep(el);
     else if (view.t === 'locdetail') await renderLocationDetail(el);
@@ -1576,6 +1581,28 @@ async function renderWhVerify(el){
   });
 }
 
+/* ---------- About ---------- */
+function renderAbout(el){
+  const row = (k, v) => `<div class="ab-row"><span>${k}</span><b>${v}</b></div>`;
+  el.innerHTML = `<div class="d-eye">UOLL &middot; About</div><h2 class="d-hi">Bin Card Pro</h2>
+    <p class="d-subt">Warehouse bin card, stock and inventory management.</p>
+    <div class="d-panel">
+      ${row('Organisation', 'Ultimate Organic Life Ltd.')}
+      ${row('Address', 'Noor Tower H#29/31, R#01, B#D, Sec# 02, Aftabnagar, Badda, Dhaka-1212')}
+      ${row('Version', esc(APP_VERSION) + (IS_NATIVE ? ' (Android app)' : ' (web)'))}
+      ${row('Signed in as', esc(me.full_name || me.email || '') + ' &middot; ' + esc(me.role))}
+      ${row('Copyright', '&copy; ' + new Date().getFullYear() + ' Akash Rahman. All rights reserved.')}
+    </div>
+    <div class="d-sec">What this app covers</div>
+    <div class="d-panel"><ul class="ab-list">
+      <li>Shelf-wise bin cards with stock in, transfers, write-offs and returns</li>
+      <li>Physical count by shelf and by whole warehouse, with verification and recount</li>
+      <li>Inventory and stock value by warehouse, shelf and product</li>
+      <li>Locations, products, users and role-based access</li>
+      <li>Dashboard and reports with CSV download and print</li>
+    </ul></div>`;
+}
+
 /* ---------- Dashboard ---------- */
 let dbDays = 7;
 const DI = {
@@ -1976,7 +2003,7 @@ async function renderProducts(el){
 }
 
 /* ---------- App shell: navigation, account sheet, native hooks ---------- */
-const ROOTS = ['dash', 'inv', 'wh', 'prod', 'loc', 'verify', 'reports', 'users'];
+const ROOTS = ['dash', 'about', 'inv', 'wh', 'prod', 'loc', 'verify', 'reports', 'users'];
 let navStack = [];
 const vKey = v => [v.t, v.wh && v.wh.id, v.shelf && v.shelf.id, v.loc && v.loc.id, v.rep].join('|');
 function navUpdate(v, isBack){
@@ -1988,7 +2015,7 @@ function navUpdate(v, isBack){
 }
 function viewTitle(v){
   switch (v.t) {
-    case 'dash': return 'Dashboard'; case 'inv': return 'Inventory'; case 'invwh': return v.wh ? 'Inventory - ' + v.wh.name : 'Inventory'; case 'wh': return 'Warehouses'; case 'prod': return 'Products'; case 'loc': return 'Locations';
+    case 'dash': return 'Dashboard'; case 'about': return 'About'; case 'inv': return 'Inventory'; case 'invwh': return v.wh ? 'Inventory - ' + v.wh.name : 'Inventory'; case 'wh': return 'Warehouses'; case 'prod': return 'Products'; case 'loc': return 'Locations';
     case 'verify': return 'Count verification'; case 'reports': return 'Reports'; case 'users': return 'Users';
     case 'shelves': return v.wh ? v.wh.name : 'Shelves';
     case 'shelf': return v.shelf ? 'Shelf ' + v.shelf.name : 'Shelf';
@@ -2038,6 +2065,7 @@ function updateNavSub(){
 }
 
 const TAB_ICONS = {
+  about: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
   inv: '<path d="M3 7l9-4 9 4-9 4z"/><path d="M3 12l9 4 9-4M3 17l9 4 9-4"/>',
   users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.5a3.5 3.5 0 010 7M18 14c2.4.6 3.5 2.4 3.5 5"/>',
   dash: '<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',
@@ -2067,6 +2095,7 @@ function fillAccount(){
 }
 const setHH = () => { const h = $('header.bar'); if (h && h.offsetHeight) document.documentElement.style.setProperty('--hh', h.offsetHeight + 'px'); };
 window.addEventListener('resize', setHH);
+$('#navYear').textContent = new Date().getFullYear();
 $('#navMenu').onclick = () => document.body.classList.toggle('nav-open');
 $('#navScrim').onclick = () => document.body.classList.remove('nav-open');
 $('#acctBtn').onclick = () => $('#acct').showModal();
