@@ -220,6 +220,19 @@ select[size] option{padding:10px 8px;border-radius:8px}
 .tabs button.on{background:#e3f1e8;color:var(--pri)}
 .tabs button[data-n]:not([data-n=""])::after{position:static;margin-left:auto}
 #navScrim{display:none;position:fixed;top:var(--hh,64px);right:0;bottom:0;left:0;background:rgba(10,30,15,.45);z-index:8}
+.tabs .subnav{display:flex;flex-direction:column;gap:2px;margin:-2px 0 6px 28px;padding-left:10px;border-left:2px solid #dbe7de}
+.tabs .subnav button{font-size:14px;font-weight:500;padding:9px 12px;gap:10px;color:var(--mut)}
+.tabs .subnav button::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.5;flex:none}
+.tabs .subnav button.on{background:#e3f1e8;color:var(--pri);font-weight:700}
+.inv-grid{display:grid;grid-template-columns:1fr;gap:12px}
+.inv-card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;text-align:left;cursor:pointer;color:inherit;font:inherit;display:flex;flex-direction:column;gap:6px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.inv-card .nm{font-weight:800;font-size:16px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.inv-card .nm span.go{color:var(--pri);font-size:13px;font-weight:700;white-space:nowrap}
+.inv-card .val{font-size:28px;font-weight:800;color:#143f22;letter-spacing:-.5px}
+.inv-card .meta{display:flex;gap:16px;flex-wrap:wrap;color:var(--mut);font-size:13px}
+.inv-card .meta b{color:#2d4636}
+@media (min-width:700px){.inv-grid{grid-template-columns:repeat(2,1fr)}}
+@media (min-width:1100px){.inv-grid{grid-template-columns:repeat(3,1fr)}}
 @media (max-width:899px){
   .tabs{transform:translateX(-105%);box-shadow:6px 0 28px rgba(0,0,0,.2)}
   body.nav-open .tabs{transform:none}
@@ -234,15 +247,6 @@ select[size] option{padding:10px 8px;border-radius:8px}
   main.wrap>*{max-width:1280px;margin-left:auto;margin-right:auto}
   #toast{bottom:24px}
 }
-.tab-foot{margin-top:auto;padding:14px 12px 4px;border-top:1px solid var(--line);font-size:12px;line-height:1.5;color:var(--mut);text-align:center}
-.tab-foot b{font-weight:700;color:var(--ink)}
-.about{max-width:560px;margin:0 auto;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:28px 22px;text-align:center}
-.about img{width:110px;margin:0 auto 10px;display:block}
-.about h2{margin:0 0 2px;font-size:22px}
-.about .ver{color:var(--mut);font-size:14px;margin-bottom:18px}
-.about .row2{border-top:1px solid var(--line);padding:12px 0;font-size:15px}
-.about .row2 small{display:block;color:var(--mut);font-size:12px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px}
-.about .cp{margin-top:6px;color:var(--mut);font-size:13px}
 @media print{#navScrim{display:none!important}.tabs{display:none!important}main.wrap{margin:0!important;width:auto!important}main.wrap>*{max-width:none!important}}
 </style>
 </head>
@@ -272,7 +276,7 @@ select[size] option{padding:10px 8px;border-radius:8px}
     <button class="ib" id="acctBtn" aria-label="Account"><span id="acctIni"></span></button>
   </div></header>
   <div id="offline" class="hidden" role="status">You are offline. Changes cannot be saved until the connection returns.</div>
-  <nav class="tabs"><button data-tab="dash" class="on">Dashboard</button><button data-tab="wh">Warehouses</button><button data-tab="prod">Products</button><button data-tab="loc" id="tabLoc">Locations</button><button data-tab="verify" id="tabVerify" class="hidden">Verification</button><button data-tab="reports" id="tabReports" class="hidden">Reports</button><button data-tab="users" id="tabUsers" class="hidden">Users</button><button data-tab="about">About</button><div class="tab-foot">&copy; 2026 Akash Rahman.<br>All rights reserved.</div></nav>
+  <nav class="tabs"><button data-tab="dash" class="on">Dashboard</button><button data-tab="wh">Warehouses</button><button data-tab="inv" id="tabInv" class="hidden">Inventory</button><div class="subnav hidden" id="invSub"></div><button data-tab="prod">Products</button><button data-tab="loc" id="tabLoc">Locations</button><button data-tab="verify" id="tabVerify" class="hidden">Verification</button><button data-tab="reports" id="tabReports" class="hidden">Reports</button><button data-tab="users" id="tabUsers" class="hidden">Users</button></nav>
   <div id="navScrim"></div>
   <main class="wrap" id="view"></main>
 </section>
@@ -430,7 +434,7 @@ $('#loginForm').addEventListener('submit', async e => {
 $('#logout').addEventListener('click', async () => { await db.auth.signOut(); me = null; showLogin(); });
 
 /* ---------- Views ---------- */
-function go(v, isBack){ document.body.classList.remove('nav-open'); navUpdate(v, isBack); view = v; document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === (v.t === 'prod' ? 'prod' : (v.t === 'loc' || v.t === 'locdetail') ? 'loc' : v.t === 'users' ? 'users' : v.t === 'about' ? 'about' : v.t === 'verify' ? 'verify' : v.t === 'dash' ? 'dash' : (v.t === 'wh' || v.t === 'shelves' || v.t === 'shelf' || v.t === 'count' || v.t === 'wcount' || v.t === 'whstock' || v.t === 'bincard') ? 'wh' : (v.t === 'reports' || v.t === 'rep') ? 'reports' : 'wh'))); render(); window.scrollTo(0, 0); updateBar(); }
+function go(v, isBack){ document.body.classList.remove('nav-open'); navUpdate(v, isBack); view = v; document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === (v.t === 'prod' ? 'prod' : (v.t === 'loc' || v.t === 'locdetail') ? 'loc' : v.t === 'users' ? 'users' : v.t === 'verify' ? 'verify' : v.t === 'dash' ? 'dash' : (v.t === 'inv' || v.t === 'invwh') ? 'inv' : (v.t === 'wh' || v.t === 'shelves' || v.t === 'shelf' || v.t === 'count' || v.t === 'wcount' || v.t === 'whstock' || v.t === 'bincard') ? 'wh' : (v.t === 'reports' || v.t === 'rep') ? 'reports' : 'wh'))); render(); window.scrollTo(0, 0); updateBar(); }
 async function render(){
   const el = $('#view');
   refreshBadge();
@@ -442,10 +446,10 @@ async function render(){
     else if (view.t === 'prod') await renderProducts(el);
     else if (view.t === 'loc') await renderLocations(el);
     else if (view.t === 'users') await renderUsers(el);
-    else if (view.t === 'about') renderAbout(el);
     else if (view.t === 'verify') await renderVerify(el);
     else if (view.t === 'wcount') await renderWhCount(el);
-    else if (view.t === 'whstock') await renderWhStock(el);
+    else if (view.t === 'whstock' || view.t === 'invwh') await renderWhStock(el);
+    else if (view.t === 'inv') await renderInventory(el);
     else if (view.t === 'reports') await renderReports(el);
     else if (view.t === 'rep') await renderRep(el);
     else if (view.t === 'locdetail') await renderLocationDetail(el);
@@ -1631,7 +1635,7 @@ async function renderDashboard(el){
     el.querySelectorAll('[data-go]').forEach(b => b.onclick = () => go({ t: b.dataset.go }));
     el.querySelectorAll('[data-rep]').forEach(b => b.onclick = () => go({ t: 'rep', rep: b.dataset.rep }));
     el.querySelectorAll('[data-days]').forEach(b => b.onclick = () => { dbDays = parseInt(b.dataset.days, 10); render(); });
-    el.querySelectorAll('.d-hb[data-wh]').forEach(b => b.onclick = () => go({ t: 'shelves', wh: { id: b.dataset.wh, name: b.dataset.name } }));
+    el.querySelectorAll('.d-hb[data-wh]').forEach(b => b.onclick = () => go({ t: 'invwh', wh: { id: b.dataset.wh, name: b.dataset.name } }));
   };
 
   if (d.role !== 'admin') {
@@ -1681,6 +1685,62 @@ async function renderDashboard(el){
   bind();
 }
 
+/* ---------- Inventory (master / admin): all warehouses, then one warehouse at a time ---------- */
+let invQ = '';
+async function fetchAll(build){
+  let out = [], from = 0;
+  for (;;) {
+    const { data, error } = await build().range(from, from + 999);
+    if (error) throw error;
+    out = out.concat(data || []);
+    if (!data || data.length < 1000) break;
+    from += 1000;
+  }
+  return out;
+}
+async function renderInventory(el){
+  if (!isAdmin()) { el.innerHTML = '<div class="empty">You do not have access to this page.</div>'; return; }
+  const [wr, sr] = await Promise.all([db.from('warehouses').select('id,name,is_active').order('name'), db.from('shelves').select('id,name,warehouse_id,is_active')]);
+  if (wr.error) throw wr.error; if (sr.error) throw sr.error;
+  const whs = (wr.data || []).filter(w => w.is_active), shelves = sr.data || [];
+  const shelfWh = {}; shelves.forEach(s => { shelfWh[s.id] = s.warehouse_id; });
+  const st = await fetchAll(() => db.from('stock').select('shelf_id,qty_pcs,products(id,code,name,mrp)').gt('qty_pcs', 0).order('shelf_id').order('product_id'));
+  const W = {}; whs.forEach(w => { W[w.id] = { pcs: 0, value: 0, prods: new Set(), shelves: shelves.filter(s => s.warehouse_id === w.id && s.is_active).length }; });
+  const P = new Map();
+  st.forEach(r => {
+    const p = r.products, wid = shelfWh[r.shelf_id]; if (!p || !W[wid]) return;
+    const q = Number(r.qty_pcs), mrp = Number(p.mrp || 0);
+    W[wid].pcs += q; W[wid].value += q * mrp; W[wid].prods.add(p.id);
+    let o = P.get(p.id); if (!o) { o = { code: p.code, name: p.name, mrp, tot: 0, by: {} }; P.set(p.id, o); }
+    o.tot += q; o.by[wid] = (o.by[wid] || 0) + q;
+  });
+  const tp = whs.reduce((a, w) => a + W[w.id].pcs, 0), tv = whs.reduce((a, w) => a + W[w.id].value, 0), maxV = Math.max(1, ...whs.map(w => W[w.id].value));
+  const q = invQ.trim().toLowerCase();
+  const list = [...P.values()].filter(o => !q || o.name.toLowerCase().includes(q) || String(o.code).toLowerCase().includes(q)).sort((a, b) => a.name.localeCompare(b.name));
+  const lv = list.reduce((a, o) => a + o.tot * o.mrp, 0), lp = list.reduce((a, o) => a + o.tot, 0);
+  const wTot = w => list.reduce((a, o) => a + (o.by[w.id] || 0), 0);
+  el.innerHTML = `<div class="d-eye">UOLL &middot; Inventory</div><h2 class="d-hi">Inventory</h2>
+    <p class="d-subt">Stock and inventory value by warehouse. Open a warehouse to see its products and shelves.</p>
+    <div class="d-grid">
+      ${kcard('Total inventory value', 'value', money(tv), 'At MRP, all warehouses')}
+      ${kcard('Total stock on hand', 'box', n0(tp), 'pcs in all warehouses')}
+      ${kcard('Products in stock', 'list', n0(P.size), 'Different products with stock')}
+      ${kcard('Warehouses', 'wh', n0(whs.length), 'Open one below')}</div>
+    <div class="d-sec">Warehouses <small>Tap a warehouse to open its inventory</small></div>
+    <div class="inv-grid">${whs.length ? whs.map(w => `<button class="inv-card" data-iw="${w.id}" data-name="${esc(w.name)}"><span class="nm"><span>${esc(w.name)}</span><span class="go">Open &rsaquo;</span></span><span class="val">${money(W[w.id].value)}</span>
+      <span class="meta"><span><b>${n0(W[w.id].pcs)}</b> pcs</span><span><b>${n0(W[w.id].prods.size)}</b> products</span><span><b>${n0(W[w.id].shelves)}</b> shelves</span></span>
+      <span class="d-hb" style="margin:4px 0 0;cursor:pointer"><span class="tr"><span class="fl" style="width:${Math.max(2, W[w.id].value / maxV * 100).toFixed(0)}%"></span></span></span></button>`).join('') : '<div class="empty">No warehouses yet.</div>'}</div>
+    <div class="d-sec">All warehouses, product wise <button class="btn light" id="invCsv" style="padding:6px 14px;font-size:13px">Download CSV</button></div>
+    <div style="margin:0 0 10px"><input type="search" id="invq" value="${esc(invQ)}" placeholder="Search product name or code" aria-label="Search product"></div>
+    ${list.length ? `<div class="scroll"><table class="bc">${tblHead(['Code', 'Product'].concat(whs.map(w => '>' + w.name), ['>Total (pcs)', '>Value (BDT)']))}<tbody>
+      ${list.map(o => `<tr><td>${esc(o.code)}</td><td class="w">${esc(o.name)}</td>${whs.map(w => `<td class="n">${o.by[w.id] ? n0(o.by[w.id]) : '-'}</td>`).join('')}<td class="n"><b>${n0(o.tot)}</b></td><td class="n">${n0(o.tot * o.mrp)}</td></tr>`).join('')}
+      <tr><th colspan="2">Total</th>${whs.map(w => `<th class="n">${n0(wTot(w))}</th>`).join('')}<th class="n">${n0(lp)}</th><th class="n">${n0(lv)}</th></tr></tbody></table></div>` : '<div class="empty">No stock found.</div>'}`;
+  el.querySelectorAll('[data-iw]').forEach(b => b.onclick = () => go({ t: 'invwh', wh: { id: b.dataset.iw, name: b.dataset.name } }));
+  $('#invq').onchange = e => { invQ = e.target.value; render(); };
+  $('#invCsv').onclick = () => saveCsv('Inventory_all_warehouses', ['Code', 'Product'].concat(whs.map(w => w.name), ['Total (pcs)', 'Value (MRP)']),
+    list.map(o => [o.code, o.name].concat(whs.map(w => o.by[w.id] || 0), [o.tot, Math.round(o.tot * o.mrp)])));
+}
+
 /* ---------- Warehouse stock overview (master / admin) ---------- */
 let wsQ = '';
 async function renderWhStock(el){
@@ -1705,22 +1765,28 @@ async function renderWhStock(el){
   const list = [...g.values()].filter(o => !q || o.name.toLowerCase().includes(q) || String(o.code).toLowerCase().includes(q)).sort((a, b) => a.name.localeCompare(b.name));
   const tp = list.reduce((a, o) => a + o.tot, 0), tv = list.reduce((a, o) => a + o.tot * o.mrp, 0);
   const shelfTot = s => list.reduce((a, o) => a + (o.by[s.id] || 0), 0);
+  const shelfPcs = {}, shelfVal = {};
+  rows.forEach(r => { shelfPcs[r.shelf_id] = (shelfPcs[r.shelf_id] || 0) + Number(r.qty_pcs); shelfVal[r.shelf_id] = (shelfVal[r.shelf_id] || 0) + Number(r.qty_pcs) * Number(r.products.mrp || 0); });
   el.innerHTML = `<button class="back" id="bk">&larr; ${esc(wh.name)}</button>
-    <div class="crumb"><h2>Current stock - ${esc(wh.name)}</h2><button class="btn light" id="wsCsv">Download CSV</button></div>
+    <div class="crumb"><h2>Inventory - ${esc(wh.name)}</h2><button class="btn light" id="wsCsv">Download CSV</button></div>
     <div class="kpis">${kpi('Products in stock', n0(list.length))}${kpi('Total quantity', n0(tp) + ' pcs')}${kpi('Stock value', money(tv), 'at MRP')}</div>
+    <div class="d-sec">Shelf wise <small>Quantity and value on each shelf</small></div>
+    <div class="d-grid">${shelves.length ? shelves.map(s => kcard('Shelf ' + s.name, 'box', n0(shelfPcs[s.id] || 0) + ' pcs', money(shelfVal[s.id] || 0))).join('') : '<div class="empty">No shelves.</div>'}</div>
+    <div class="d-sec">Product wise <small>All shelves of this warehouse</small></div>
     <div style="margin:10px 0"><input type="search" id="wsq" value="${esc(wsQ)}" placeholder="Search product name or code" aria-label="Search product"></div>
     ${list.length ? `<div class="scroll"><table class="bc">${tblHead(['Code', 'Product'].concat(shelves.map(s => '>Shelf ' + s.name), ['>Total (pcs)', '>Value (BDT)']))}<tbody>
     ${list.map(o => `<tr><td>${esc(o.code)}</td><td class="w">${esc(o.name)}</td>${shelves.map(s => `<td class="n">${o.by[s.id] ? n0(o.by[s.id]) : '-'}</td>`).join('')}<td class="n"><b>${n0(o.tot)}</b></td><td class="n">${n0(o.tot * o.mrp)}</td></tr>`).join('')}
     <tr><th colspan="2">Total</th>${shelves.map(s => `<th class="n">${n0(shelfTot(s))}</th>`).join('')}<th class="n">${n0(tp)}</th><th class="n">${n0(tv)}</th></tr></tbody></table></div>` : '<div class="empty">No stock in this warehouse yet.</div>'}`;
-  $('#bk').onclick = () => go({ t: 'shelves', wh });
+  $('#bk').onclick = () => go({ t: view.t === 'invwh' ? 'inv' : 'shelves', wh });
   $('#wsq').onchange = e => { wsQ = e.target.value; render(); };
-  $('#wsCsv').onclick = () => saveCsv('Stock_' + wh.name.replace(/\W+/g, '_'), ['Code', 'Product'].concat(shelves.map(s => 'Shelf ' + s.name), ['Total (pcs)', 'Value (MRP)']),
+  $('#wsCsv').onclick = () => saveCsv('Inventory_' + wh.name.replace(/\W+/g, '_'), ['Code', 'Product'].concat(shelves.map(s => 'Shelf ' + s.name), ['Total (pcs)', 'Value (MRP)']),
     list.map(o => [o.code, o.name].concat(shelves.map(s => o.by[s.id] || 0), [o.tot, Math.round(o.tot * o.mrp)])));
 }
 
 /* ---------- Add, rename, delete places (master / admin) ---------- */
 async function place(kind, action, o = {}){
   const { error } = await db.rpc('manage_place', { p_kind: kind, p_action: action, p_id: o.id || null, p_name: o.name || null, p_parent: o.parent || null });
+  if (!error && kind === 'warehouse') loadInvNav();
   return error ? (error.message || 'Could not complete the action.') : '';
 }
 const delConfirm = (kind, name) => confirm('Delete ' + kind + ' "' + name + '"?\n\nThis cannot be undone. An item that has stock or history cannot be deleted. Deactivate it instead.');
@@ -1910,7 +1976,7 @@ async function renderProducts(el){
 }
 
 /* ---------- App shell: navigation, account sheet, native hooks ---------- */
-const ROOTS = ['dash', 'wh', 'prod', 'loc', 'verify', 'reports', 'users', 'about'];
+const ROOTS = ['dash', 'inv', 'wh', 'prod', 'loc', 'verify', 'reports', 'users'];
 let navStack = [];
 const vKey = v => [v.t, v.wh && v.wh.id, v.shelf && v.shelf.id, v.loc && v.loc.id, v.rep].join('|');
 function navUpdate(v, isBack){
@@ -1922,8 +1988,8 @@ function navUpdate(v, isBack){
 }
 function viewTitle(v){
   switch (v.t) {
-    case 'dash': return 'Dashboard'; case 'wh': return 'Warehouses'; case 'prod': return 'Products'; case 'loc': return 'Locations';
-    case 'verify': return 'Count verification'; case 'reports': return 'Reports'; case 'users': return 'Users'; case 'about': return 'About';
+    case 'dash': return 'Dashboard'; case 'inv': return 'Inventory'; case 'invwh': return v.wh ? 'Inventory - ' + v.wh.name : 'Inventory'; case 'wh': return 'Warehouses'; case 'prod': return 'Products'; case 'loc': return 'Locations';
+    case 'verify': return 'Count verification'; case 'reports': return 'Reports'; case 'users': return 'Users';
     case 'shelves': return v.wh ? v.wh.name : 'Shelves';
     case 'shelf': return v.shelf ? 'Shelf ' + v.shelf.name : 'Shelf';
     case 'count': return 'Physical count'; case 'whstock': return v.wh ? 'Stock - ' + v.wh.name : 'Warehouse stock'; case 'wcount': return v.wh ? 'Count - ' + v.wh.name : 'Warehouse count'; case 'bincard': return 'Bin card';
@@ -1933,6 +1999,7 @@ function viewTitle(v){
   }
 }
 function updateBar(){
+  updateNavSub();
   document.body.classList.toggle('wm-on', view.t === 'bincard');
   $('#navBack').classList.toggle('hidden', ROOTS.includes(view.t));
   $('#barTitle').textContent = viewTitle(view);
@@ -1950,31 +2017,35 @@ function handleBack(fromPop){
 window.addEventListener('popstate', () => handleBack(true));
 $('#navBack').onclick = () => { if (navStack.length) history.back(); else handleBack(false); };
 
-const DEV_NAME = 'Akash Rahman';
-const DEV_EMAIL = '';   // optional: put your email here to show it on the About screen
-const DEV_PHONE = '';   // optional: put your phone here to show it on the About screen
-function renderAbout(el){
-  const logo = document.querySelector('.login-logo');
-  const src = logo ? logo.getAttribute('src') : '';
-  el.innerHTML = '<div class="about">' +
-    (src ? '<img alt="UOLL" src="' + src + '">' : '') +
-    '<h2>UOLL Bin Card Pro</h2>' +
-    '<div class="ver">Version ' + esc(APP_VERSION) + (IS_NATIVE ? ' (Android app)' : ' (web)') + '</div>' +
-    '<div class="row2"><small>Designed &amp; developed by</small><b>' + esc(DEV_NAME) + '</b></div>' +
-    (DEV_EMAIL ? '<div class="row2"><small>Email</small>' + esc(DEV_EMAIL) + '</div>' : '') +
-    (DEV_PHONE ? '<div class="row2"><small>Phone</small>' + esc(DEV_PHONE) + '</div>' : '') +
-    '<div class="row2 cp">&copy; 2026 ' + esc(DEV_NAME) + '. All rights reserved.</div>' +
-  '</div>';
+async function loadInvNav(){
+  if (!me || !isAdmin()) return;
+  try {
+    const { data } = await db.from('warehouses').select('id,name,is_active').order('name');
+    const box = $('#invSub'); box.innerHTML = '';
+    (data || []).filter(w => w.is_active).forEach(w => {
+      const b = document.createElement('button'); b.type = 'button'; b.dataset.wh = w.id; b.textContent = w.name;
+      b.onclick = () => go({ t: 'invwh', wh: { id: w.id, name: w.name } });
+      box.appendChild(b);
+    });
+    updateNavSub();
+  } catch (e) { /* sub-menu is optional */ }
 }
+function updateNavSub(){
+  const box = $('#invSub'); if (!box) return;
+  const inInv = view.t === 'inv' || view.t === 'invwh';
+  box.classList.toggle('hidden', !inInv || !box.children.length);
+  box.querySelectorAll('button').forEach(b => b.classList.toggle('on', view.t === 'invwh' && !!view.wh && view.wh.id === b.dataset.wh));
+}
+
 const TAB_ICONS = {
+  inv: '<path d="M3 7l9-4 9 4-9 4z"/><path d="M3 12l9 4 9-4M3 17l9 4 9-4"/>',
   users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.5a3.5 3.5 0 010 7M18 14c2.4.6 3.5 2.4 3.5 5"/>',
   dash: '<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',
   wh: '<path d="M3 21V9l9-5 9 5v12"/><path d="M8 21v-7h8v7"/>',
   prod: '<path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/>',
   loc: '<path d="M12 21s7-6.2 7-11a7 7 0 10-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/>',
   verify: '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/>',
-  reports: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
-  about: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><circle cx="12" cy="7.8" r=".6"/>'
+  reports: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'
 };
 document.querySelectorAll('.tabs button').forEach(b => {
   const ic = TAB_ICONS[b.dataset.tab]; if (!ic) return;
@@ -1990,7 +2061,8 @@ function fillAccount(){
   $('#acUsers').style.display = 'none';
   $('#acLoc').style.display = 'none';
   $('#tabLoc').classList.remove('hidden');
-  setHH();
+  $('#tabInv').classList.toggle('hidden', !isAdmin());
+  setHH(); loadInvNav();
   $('#verLine').textContent = 'Version ' + APP_VERSION + (IS_NATIVE ? ' (Android app)' : ' (web)');
 }
 const setHH = () => { const h = $('header.bar'); if (h && h.offsetHeight) document.documentElement.style.setProperty('--hh', h.offsetHeight + 'px'); };
