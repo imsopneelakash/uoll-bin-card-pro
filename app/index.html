@@ -257,6 +257,9 @@ select[size] option{padding:10px 8px;border-radius:8px}
   #toast{bottom:24px}
 }
 @media print{.sheet{border:0!important;border-radius:0!important;padding:0!important;margin:0!important;break-after:page;page-break-after:always}.sheet:last-of-type{break-after:auto;page-break-after:auto}#navScrim{display:none!important}.tabs{display:none!important}main.wrap{margin:0!important;width:auto!important}main.wrap>*{max-width:none!important}}
+#retry{min-height:100%;display:grid;place-items:center;padding:20px}
+.pwrow{position:relative}.pwrow input{padding-right:46px}
+.eye{position:absolute;right:4px;top:50%;transform:translateY(-50%);background:none!important;border:0;width:40px;height:40px;color:var(--mut);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
 </style>
 </head>
 <body>
@@ -267,13 +270,21 @@ select[size] option{padding:10px 8px;border-radius:8px}
     <img class="login-logo" alt="Ultimate Organic Life" src="data:image/jpeg;base64,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">
     <h1>UOLL Bin Card Pro</h1>
     <p>Sign in to manage warehouse bin cards.</p>
-    <label for="em">Email</label>
-    <input id="em" type="email" autocomplete="username" required>
-    <label for="pw">Password</label>
-    <input id="pw" type="password" autocomplete="current-password" required>
+    <label for="em">Employee ID or email</label>
+    <input id="em" type="text" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" required>
+    <label for="pw">Password or PIN</label>
+    <div class="pwrow"><input id="pw" type="password" autocomplete="current-password" required><button type="button" class="eye" id="pwEye" aria-label="Show password"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
     <div class="err" id="loginErr" role="alert"></div>
     <button class="btn" id="loginBtn" type="submit">Sign in</button>
   </form>
+</section>
+
+<section id="retry" class="hidden">
+  <div class="login-box" style="text-align:center">
+    <h1>No connection</h1>
+    <p id="retryMsg">Could not connect. Check your internet connection and try again.</p>
+    <button class="btn" id="retryBtn" type="button">Try again</button>
+  </div>
 </section>
 
 <section id="app" class="hidden">
@@ -334,8 +345,10 @@ select[size] option{padding:10px 8px;border-radius:8px}
   <form id="uForm">
     <h3 id="uTitle"></h3>
     <label for="uName">Full name</label><input type="text" id="uName" maxlength="80" autocomplete="off">
-    <label for="uEmail">Email</label><input type="text" id="uEmail" inputmode="email" autocomplete="off">
-    <label for="uPass" id="uPassL">Password</label><input type="text" id="uPass" autocomplete="new-password" placeholder="At least 8 characters">
+    <div id="uTypeW"><label for="uType">Sign in with</label><select id="uType"><option value="id">Employee ID</option><option value="email">Email</option></select></div>
+    <div id="uEidW"><label for="uEid">Employee ID</label><input type="text" id="uEid" maxlength="30" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="For example UOL-0123"></div>
+    <div id="uEmW"><label for="uEmail">Email</label><input type="text" id="uEmail" inputmode="email" autocomplete="off"></div>
+    <label for="uPass" id="uPassL">Password or PIN</label><input type="text" id="uPass" autocomplete="new-password" placeholder="At least 6 characters (a 6-digit PIN is fine for employees)">
     <label for="uRole">Role</label><select id="uRole"></select>
     <div class="hint" id="uHint"></div>
     <div class="err" id="uErr" role="alert"></div>
@@ -409,38 +422,78 @@ function askName(title, value = ''){
 const isAdmin = () => me && (me.role === 'master' || me.role === 'admin');
 
 /* ---------- Auth ---------- */
+// Employee ID sign-in: an Employee ID is turned into a hidden email address.
+// These two values MUST be the same as EMP_EMAIL_LOCAL / EMP_EMAIL_DOMAIN in the manage-users function.
+// Do not change them after users have been created.
+const EMP_EMAIL_LOCAL = 'akashrahmanuoll';
+const EMP_EMAIL_DOMAIN = 'gmail.com';
+const idToEmail = v => {
+  v = String(v || '').trim();
+  if (v.includes('@')) return v.toLowerCase();                       // admin / master can still use an email
+  const id = v.toLowerCase().replace(/[^a-z0-9._-]/g, '');
+  return EMP_EMAIL_LOCAL + '+' + id + '@' + EMP_EMAIL_DOMAIN;
+};
+const cacheProfile = p => { try { localStorage.setItem('uoll_profile', JSON.stringify(p)); } catch (e) {} };
+const cachedProfile = id => { try { const p = JSON.parse(localStorage.getItem('uoll_profile') || 'null'); return p && p.id === id ? p : null; } catch (e) { return null; } };
+const isNetErr = e => !!e && /Retryable|fetch|network|timeout|Load failed/i.test(String(e.name || '') + ' ' + String(e.message || ''));
+
 async function boot(){
-  const { data } = await db.auth.getSession();
-  if (data.session) await enter(); else showLogin();
+  let r;
+  try { r = await db.auth.getSession(); } catch (e) { r = { data: {}, error: e }; }
+  if (r.data && r.data.session) return enter();
+  // A saved sign-in that could not be refreshed only because the network is down must not log the user out.
+  if (isNetErr(r.error)) return showRetry();
+  showLogin();
+}
+function showRetry(msg){
+  $('#app').classList.add('hidden'); $('#login').classList.add('hidden'); $('#retry').classList.remove('hidden');
+  $('#retryMsg').textContent = msg || 'Could not connect. Check your internet connection and try again.';
 }
 function showLogin(msg = ''){
-  $('#app').classList.add('hidden'); $('#login').classList.remove('hidden');
+  $('#app').classList.add('hidden'); $('#retry').classList.add('hidden'); $('#login').classList.remove('hidden');
   $('#loginErr').textContent = msg; $('#pw').value = '';
+  try { const sv = localStorage.getItem('uoll_login'); if (sv && !$('#em').value) $('#em').value = sv; } catch (e) {}
 }
 async function enter(){
-  const { data: u } = await db.auth.getUser();
-  if (!u.user) return showLogin();
-  const { data, error } = await db.from('profiles').select('*').eq('id', u.user.id).single();
-  if (error || !data) { await db.auth.signOut(); return showLogin('Your profile could not be loaded. Contact the administrator.'); }
-  if (!data.is_active) { await db.auth.signOut(); return showLogin('This account is deactivated. Contact the administrator.'); }
-  me = data;
-  $('#whoSub').textContent = me.full_name || me.email || '';
+  const { data: sd } = await db.auth.getSession();
+  const user = sd && sd.session && sd.session.user;
+  if (!user) return showLogin();
+  let prof = null, perr = null;
+  try { const r = await db.from('profiles').select('*').eq('id', user.id).single(); prof = r.data; perr = r.error; } catch (e) { perr = e; }
+  if (perr && perr.code !== 'PGRST116') {
+    // Connection or server problem: keep the user signed in and use the last saved profile if there is one.
+    prof = cachedProfile(user.id);
+    if (!prof) return showRetry();
+  } else if (perr || !prof) {
+    await db.auth.signOut(); return showLogin('Your profile could not be loaded. Contact the administrator.');
+  } else {
+    cacheProfile(prof);
+  }
+  if (!prof.is_active) { await db.auth.signOut(); return showLogin('This account is deactivated. Contact the administrator.'); }
+  me = prof;
+  $('#whoSub').textContent = me.employee_id ? 'Employee ID: ' + me.employee_id : (me.full_name || me.email || '');
   $('#roleTag').textContent = me.role;
   $('#tabUsers').classList.toggle('hidden', !isAdmin());
   $('#tabReports').classList.toggle('hidden', !isAdmin());
   $('#tabVerify').classList.toggle('hidden', !isAdmin());
-  $('#login').classList.add('hidden'); $('#app').classList.remove('hidden');
+  $('#login').classList.add('hidden'); $('#retry').classList.add('hidden'); $('#app').classList.remove('hidden');
   fillAccount(); navStack = []; go({ t: 'dash' }); checkUpdate();
 }
 $('#loginForm').addEventListener('submit', async e => {
   e.preventDefault();
   const b = $('#loginBtn'); b.disabled = true; b.textContent = 'Signing in...';
-  const { error } = await db.auth.signInWithPassword({ email: $('#em').value.trim(), password: $('#pw').value });
+  const raw = $('#em').value.trim();
+  let error = null;
+  try { ({ error } = await db.auth.signInWithPassword({ email: idToEmail(raw), password: $('#pw').value })); } catch (x) { error = x; }
   b.disabled = false; b.textContent = 'Sign in';
-  if (error) return showLogin('Sign-in failed. Check your email and password.');
+  if (error) return showLogin(isNetErr(error) ? 'No connection. Check your internet and try again.' : 'Sign-in failed. Check your Employee ID and password.');
+  try { localStorage.setItem('uoll_login', raw); } catch (x) {}
   await enter();
 });
-$('#logout').addEventListener('click', async () => { await db.auth.signOut(); me = null; showLogin(); });
+$('#logout').addEventListener('click', async () => { await db.auth.signOut(); me = null; try { localStorage.removeItem('uoll_profile'); } catch (e) {} showLogin(); });
+$('#retryBtn').addEventListener('click', () => boot());
+window.addEventListener('online', () => { if (!$('#retry').classList.contains('hidden')) boot(); });
+(() => { const eye = $('#pwEye'), pw = $('#pw'); if (eye && pw) eye.onclick = () => { const show = pw.type === 'password'; pw.type = show ? 'text' : 'password'; eye.setAttribute('aria-label', show ? 'Hide password' : 'Show password'); eye.style.color = show ? 'var(--pri)' : ''; }; })();
 
 /* ---------- Views ---------- */
 function go(v, isBack){ document.body.classList.remove('nav-open'); navUpdate(v, isBack); view = v; document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === (v.t === 'prod' ? 'prod' : (v.t === 'loc' || v.t === 'locdetail') ? 'loc' : v.t === 'users' ? 'users' : v.t === 'verify' ? 'verify' : v.t === 'dash' ? 'dash' : v.t === 'about' ? 'about' : (v.t === 'inv' || v.t === 'invwh') ? 'inv' : (v.t === 'wh' || v.t === 'shelves' || v.t === 'shelf' || v.t === 'count' || v.t === 'wcount' || v.t === 'whstock' || v.t === 'bincard') ? 'wh' : (v.t === 'reports' || v.t === 'rep') ? 'reports' : 'wh'))); render(); window.scrollTo(0, 0); updateBar(); }
@@ -1152,32 +1205,48 @@ async function callUsers(body){
 
 function userDialog(mode, u){
   return new Promise(res => {
-    const d = $('#udlg'), err = $('#uErr'), save = $('#uSave'), roleSel = $('#uRole');
+    const d = $('#udlg'), err = $('#uErr'), save = $('#uSave'), roleSel = $('#uRole'), typ = $('#uType');
     const edit = mode === 'edit';
+    const ID_RE = /^[a-z0-9._-]{2,30}$/, EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     $('#uTitle').textContent = edit ? 'Edit user' : 'Add user';
     $('#uName').value = edit ? (u.full_name || '') : '';
-    $('#uEmail').value = edit ? u.email : ''; $('#uEmail').disabled = edit;
-    $('#uPass').value = ''; $('#uPassL').textContent = edit ? 'New password (leave empty to keep the current one)' : 'Password';
+    $('#uEid').value = edit ? (u.employee_id || '') : '';
+    $('#uEmail').value = edit && !u.employee_id ? (u.email || '') : ''; $('#uEmail').disabled = edit;
+    $('#uPass').value = ''; $('#uPassL').textContent = edit ? 'New password or PIN (leave empty to keep the current one)' : 'Password or PIN';
     const roles = me.role === 'master' ? ['employee', 'admin', 'master'] : ['employee'];
     roleSel.innerHTML = roles.map(r => `<option value="${r}">${ROLE_LABEL[r]}</option>`).join('');
     roleSel.value = edit && roles.includes(u.role) ? u.role : 'employee';
-    $('#uHint').textContent = edit ? 'Share a new password with the user directly.' : 'Share this email and password with the user directly.';
+    typ.value = 'id';
+    const sync = () => {
+      $('#uTypeW').classList.toggle('hidden', edit);
+      $('#uEidW').classList.toggle('hidden', !edit && typ.value !== 'id');
+      $('#uEmW').classList.toggle('hidden', edit ? !!u.employee_id : typ.value !== 'email');
+      $('#uHint').textContent = edit
+        ? (u.employee_id ? 'Employee ID: letters, numbers, dot, dash or underscore. Share any new password or PIN with the user directly.'
+          : 'Entering an Employee ID switches this user to Employee ID sign-in. Share any new password or PIN with the user directly.')
+        : 'Employees can use a 6-digit PIN. Admin and master need at least 8 characters. Share the sign-in details with the user directly.';
+    };
+    typ.onchange = sync; sync();
     err.textContent = ''; save.disabled = false; save.textContent = 'Save';
     $('#uCancel').onclick = () => d.close();
     $('#uForm').onsubmit = async e => {
       e.preventDefault(); err.textContent = '';
       const name = $('#uName').value.trim(), email = $('#uEmail').value.trim().toLowerCase(), pass = $('#uPass').value;
+      const eid = $('#uEid').value.trim().toLowerCase(), role = roleSel.value, minLen = role === 'employee' ? 6 : 8;
       if (!name) { err.textContent = 'Enter the full name.'; return; }
-      if (!edit && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { err.textContent = 'Enter a valid email address.'; return; }
-      if ((!edit || pass) && pass.length < 8) { err.textContent = 'Password must be at least 8 characters.'; return; }
+      if (!edit && typ.value === 'id' && !ID_RE.test(eid)) { err.textContent = 'Enter an Employee ID (letters, numbers, dot, dash or underscore, 2 to 30 characters).'; return; }
+      if (!edit && typ.value === 'email' && !EMAIL_RE.test(email)) { err.textContent = 'Enter a valid email address.'; return; }
+      if (edit && eid && eid !== (u.employee_id || '') && !ID_RE.test(eid)) { err.textContent = 'Employee ID can use letters, numbers, dot, dash and underscore (2 to 30 characters).'; return; }
+      if ((!edit || pass) && pass.length < minLen) { err.textContent = 'Password must be at least ' + minLen + ' characters.'; return; }
       save.disabled = true; save.textContent = 'Saving...';
       try {
         if (edit) {
-          const body = { action: 'update', id: u.id, full_name: name, role: roleSel.value };
+          const body = { action: 'update', id: u.id, full_name: name, role };
           if (pass) body.password = pass;
+          if (eid && eid !== (u.employee_id || '')) body.employee_id = eid;
           await callUsers(body);
         } else {
-          await callUsers({ action: 'create', full_name: name, email, password: pass, role: roleSel.value });
+          await callUsers(Object.assign({ action: 'create', full_name: name, password: pass, role }, typ.value === 'id' ? { employee_id: eid } : { email }));
         }
         d.close('ok');
       } catch (x) { err.textContent = x.message; save.disabled = false; save.textContent = 'Save'; }
@@ -1194,7 +1263,7 @@ async function renderUsers(el){
   const byId = Object.fromEntries(users.map(x => [x.id, x]));
   el.innerHTML = `<div class="crumb"><h2>Users</h2><button class="btn" id="addUser">Add user</button></div>
     <div class="list">${users.length ? users.map(x => `<div class="item ${x.is_active ? '' : 'off'}" style="cursor:default">
-      <span class="grow"><b>${esc(x.full_name || x.email)}</b><span class="sub">${esc(x.email || '')} &middot; ${esc(ROLE_LABEL[x.role] || x.role)}${x.id === me.id ? ' &middot; You' : ''}</span></span>
+      <span class="grow"><b>${esc(x.full_name || x.email)}</b><span class="sub">${x.employee_id ? 'ID ' + esc(x.employee_id) : esc(x.email || '')} &middot; ${esc(ROLE_LABEL[x.role] || x.role)}${x.id === me.id ? ' &middot; You' : ''}</span></span>
       ${x.is_active ? '' : '<span class="tag">Deactivated</span>'}
       ${x.can_manage ? `<button class="btn ghost" data-ed="${x.id}" style="color:var(--pri)">Edit</button><button class="btn ghost" data-tg="${x.id}" style="color:var(--pri)">${x.is_active ? 'Deactivate' : 'Activate'}</button>` : ''}</div>`).join('') : '<div class="empty">No users found.</div>'}</div>
     <div class="hint">${me.role === 'master' ? 'Master can manage admin and employee accounts.' : 'Admin can manage employee accounts.'} A deactivated user cannot sign in.</div>`;
