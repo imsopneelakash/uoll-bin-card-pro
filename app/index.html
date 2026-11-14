@@ -220,6 +220,11 @@ select[size] option{padding:10px 8px;border-radius:8px}
 .tabs button.on{background:#e3f1e8;color:var(--pri)}
 .tabs button[data-n]:not([data-n=""])::after{position:static;margin-left:auto}
 #navScrim{display:none;position:fixed;top:var(--hh,64px);right:0;bottom:0;left:0;background:rgba(10,30,15,.45);z-index:8}
+.sheet{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:18px}
+.sh-sum{margin:10px 0 0;font-size:13.5px;line-height:1.7}
+.sh-sign{display:flex;justify-content:space-between;gap:36px;margin-top:44px}
+.sh-sign div{flex:1;border-top:1px solid #444;padding-top:6px;text-align:center;font-size:12.5px}
+.sh-ok{color:#1b6b36;font-weight:700}.sh-bad{color:#b3261e;font-weight:700}.sh-wait{color:#a85000;font-weight:700}
 .nav-foot{margin-top:auto;padding:14px 8px 4px;border-top:1px solid var(--line);font-size:12.5px;color:var(--mut);text-align:center;line-height:1.55}
 .ab-row{display:flex;justify-content:space-between;gap:16px;padding:11px 0;border-bottom:1px solid #eef2ee;font-size:14.5px}
 .ab-row:last-child{border-bottom:0}.ab-row span{color:var(--mut)}.ab-row b{text-align:right}
@@ -251,7 +256,7 @@ select[size] option{padding:10px 8px;border-radius:8px}
   main.wrap>*{max-width:1280px;margin-left:auto;margin-right:auto}
   #toast{bottom:24px}
 }
-@media print{#navScrim{display:none!important}.tabs{display:none!important}main.wrap{margin:0!important;width:auto!important}main.wrap>*{max-width:none!important}}
+@media print{.sheet{border:0!important;border-radius:0!important;padding:0!important;margin:0!important;break-after:page;page-break-after:always}.sheet:last-of-type{break-after:auto;page-break-after:auto}#navScrim{display:none!important}.tabs{display:none!important}main.wrap{margin:0!important;width:auto!important}main.wrap>*{max-width:none!important}}
 </style>
 </head>
 <body>
@@ -1214,6 +1219,7 @@ const REPORTS = [
   { k: 'activity', t: 'User activity', d: 'Entries per user and per day' },
   { k: 'audit', t: 'Audit pending', d: 'Entries that are not audited yet, by shelf' },
   { k: 'movement', t: 'Fast and dead stock', d: 'Top moving products and stock that has not moved' },
+  { k: 'countsheet', t: 'Count sheets (print)', d: 'Serial-wise count sheet showing who submitted and who verified, ready to print' },
   { k: 'wcountres', t: 'Warehouse count results', d: 'Whole-warehouse product counts: day wise, month wise, by warehouse and date to date' },
   { k: 'countres', t: 'Physical count results', d: 'Day wise, month wise and date to date count results with recounts and differences' },
   { k: 'reorder', t: 'Reorder suggestion', d: 'Products at or below minimum stock and how much to order' },
@@ -1283,7 +1289,7 @@ async function renderReports(el){
 
 async function renderRep(el){
   if (!isAdmin()) { el.innerHTML = '<div class="empty">You do not have access to this page.</div>'; return; }
-  const fn = { ledger: repLedger, location: repLocation, count: repCount, supplier: repSupplier, issue: repIssue, activity: repActivity, audit: repAudit, movement: repMovement, countres: repCountRes, wcountres: repWCountRes, reorder: repReorder, writeoff: repWriteoff, corrections: repCorrections }[view.rep];
+  const fn = { ledger: repLedger, location: repLocation, count: repCount, supplier: repSupplier, issue: repIssue, activity: repActivity, audit: repAudit, movement: repMovement, countsheet: repCountSheet, countres: repCountRes, wcountres: repWCountRes, reorder: repReorder, writeoff: repWriteoff, corrections: repCorrections }[view.rep];
   if (!fn) return go({ t: 'reports' });
   await fn(el);
 }
@@ -1535,7 +1541,8 @@ async function repCorrections(el){
 
 async function renderVerify(el){
   if (!isAdmin()) { el.innerHTML = '<div class="empty">You do not have access to this page.</div>'; return; }
-  el.innerHTML = '<div id="vs"></div><div id="vw"></div>';
+  el.innerHTML = '<div class="row" style="justify-content:flex-end;margin-bottom:6px"><button class="btn light" id="vPrint">Print count sheets</button></div><div id="vs"></div><div id="vw"></div>';
+  $('#vPrint').onclick = () => { const t = ymd(new Date()); repRange.from = t; repRange.to = t; go({ t: 'rep', rep: 'countsheet' }); };
   await Promise.all([renderVerifyShelf($('#vs')), renderWhVerify($('#vw'))]);
 }
 async function renderWhVerify(el){
@@ -1943,6 +1950,54 @@ async function repWCountRes(el){
       rows.map(r => [r.count_date, fmtT(r.device_time), r.warehouse_name, r.shelf_name, r.product_code + ' - ' + r.product_name, r.counted_by_name, r.counted_pcs, r.sys_pcs, fd(r), r.rounds, r.status, r.verified_by_name || '', r.verified_at ? fmtDT(r.verified_at) : ''])));
   }
   $('#wcv').onchange = e => { wcView = e.target.value; render(); };
+}
+
+/* --- Count sheets: serial-wise, printable, with who submitted and who verified --- */
+let csKey = 'all';
+async function repCountSheet(el){
+  const [a, b] = await Promise.all([
+    rpcAll('report_count_results', { p_from: repRange.from, p_to: repRange.to }),
+    rpcAll('report_wcount_results', { p_from: repRange.from, p_to: repRange.to })]);
+  const items = a.map(r => Object.assign({}, r, { kind: 'shelf', place: r.warehouse_name + ' / Shelf ' + r.shelf_name, wh: r.warehouse_name, shelf: r.shelf_name, key: 'S|' + r.count_date + '|' + r.warehouse_name + '|' + r.shelf_name }))
+    .concat(b.map(r => Object.assign({}, r, { kind: 'warehouse', place: r.warehouse_name, wh: r.warehouse_name, shelf: '', key: 'W|' + r.count_date + '|' + r.warehouse_name })));
+  const groups = new Map();
+  items.forEach(r => { let g = groups.get(r.key); if (!g) { g = { key: r.key, kind: r.kind, date: r.count_date, place: r.place, wh: r.wh, shelf: r.shelf, rows: [] }; groups.set(r.key, g); } g.rows.push(r); });
+  const all = [...groups.values()].sort((x, y) => y.date.localeCompare(x.date) || x.place.localeCompare(y.place) || x.kind.localeCompare(y.kind));
+  if (csKey !== 'all' && !groups.has(csKey)) csKey = 'all';
+  const shown = csKey === 'all' ? all : all.filter(g => g.key === csKey);
+  const dLbl = d => fmtD(d + 'T12:00:00+06:00');
+  const resultOf = r => r.status === 'verified' ? (r.accepted_diff ? ['Difference accepted', 'sh-bad'] : ['OK', 'sh-ok']) : r.status === 'recount' ? ['Waiting for recount', 'sh-wait'] : ['Awaiting verification', 'sh-wait'];
+  const uniq = arr => [...new Set(arr.filter(Boolean))];
+  const sheetHtml = g => {
+    const rows = g.rows.slice().sort((x, y) => String(x.product_code).localeCompare(String(y.product_code), undefined, { numeric: true }) || String(x.product_name).localeCompare(String(y.product_name)));
+    const ver = rows.filter(r => r.status === 'verified'), okN = ver.filter(r => !r.accepted_diff).length, dfN = ver.filter(r => r.accepted_diff).length, waitN = rows.length - ver.length;
+    const sys = rows.reduce((t, r) => t + nz(r.sys_pcs), 0), cnt = rows.reduce((t, r) => t + nz(r.counted_pcs), 0);
+    const by = uniq(rows.map(r => r.counted_by_name)), vb = uniq(rows.map(r => r.verified_by_name));
+    const lastV = rows.map(r => r.verified_at).filter(Boolean).sort().pop();
+    return `<section class="sheet">
+      <div class="paperhead">
+        <div><b style="font-size:18px">Ultimate Organic Life Ltd.</b><small>Noor Tower H#29/31, R#01, B#D, Sec# 02, Aftabnagar, Badda, Dhaka-1212</small></div>
+        <div><small>Physical Count Sheet</small><b>${g.kind === 'shelf' ? 'Shelf count' : 'Whole-warehouse count'}</b><small>Warehouse : <b>${esc(g.wh)}</b></small>${g.kind === 'shelf' ? `<small>Shelf : <b>${esc(g.shelf)}</b></small>` : ''}</div>
+        <div><small>Count date</small><b>${esc(dLbl(g.date))}</b><small>Printed : ${esc(fmtD(new Date().toISOString()))} ${esc(fmtT(new Date().toISOString()))}</small></div>
+      </div>
+      <div class="scroll"><table class="bc bcard"><thead><tr><th>Sl</th><th>Code</th><th>Product Name</th><th>System Qty</th><th>Counted Qty</th><th>Variance</th><th>Rounds</th><th>Result</th><th>Counted by</th><th>Verified by</th></tr></thead><tbody>
+      ${rows.map((r, i) => { const d = nz(r.counted_pcs) - nz(r.sys_pcs), rs = resultOf(r); return `<tr><td>${i + 1}</td><td>${esc(r.product_code)}</td><td class="w">${esc(r.product_name)}</td><td>${n0(r.sys_pcs)}</td><td><b>${n0(r.counted_pcs)}</b></td><td class="${d ? 'sh-bad' : ''}">${d ? (d > 0 ? '+' : '') + n0(d) : '0'}</td><td>${r.rounds}</td><td class="${rs[1]}">${rs[0]}</td><td>${esc(r.counted_by_name || '')}<small style="display:block;color:var(--mut)">${esc(fmtD(r.device_time))} ${esc(fmtT(r.device_time))}</small></td><td>${r.verified_by_name ? esc(r.verified_by_name) + `<small style="display:block;color:var(--mut)">${esc(fmtD(r.verified_at))} ${esc(fmtT(r.verified_at))}</small>` : ''}</td></tr>`; }).join('')}
+      <tr><th colspan="3">Total (${rows.length} products)</th><th>${n0(sys)}</th><th>${n0(cnt)}</th><th>${(cnt - sys > 0 ? '+' : '') + n0(cnt - sys)}</th><th colspan="4"></th></tr></tbody></table></div>
+      <div class="sh-sum"><b>Summary:</b> ${rows.length} products &middot; ${okN} OK &middot; ${dfN} difference accepted &middot; ${waitN} not verified yet<br>
+        <b>Submitted by:</b> ${esc(by.join(', ') || '-')}<br>
+        <b>Verified by:</b> ${vb.length ? esc(vb.join(', ')) + (lastV ? ' &middot; ' + esc(fmtD(lastV)) + ' ' + esc(fmtT(lastV)) : '') : 'Not verified yet'}</div>
+      <div class="sh-sign"><div>Counted by (signature)</div><div>Verified by (signature)</div></div>
+    </section>`;
+  };
+  const opts = [['all', 'All sheets (' + all.length + ')']].concat(all.map(g => [g.key, dLbl(g.date) + ' - ' + g.place + (g.kind === 'warehouse' ? ' (whole warehouse)' : '')]));
+  el.innerHTML = `<button class="back" id="bk">&larr; Reports</button>
+    <div class="crumb noprint"><h2>Count sheets</h2><span style="display:flex;gap:8px"><button class="btn light" id="prn">Print</button></span></div>
+    <div class="noprint"><div class="row"><div style="flex:1"><label for="rpf">From</label><input type="date" id="rpf" value="${repRange.from}"></div><div style="flex:1"><label for="rpt">To</label><input type="date" id="rpt" value="${repRange.to}"></div></div>
+      <div class="row" style="margin-top:8px">${sel('csk', 'Sheet', opts, csKey)}</div>
+      <div class="hint">Each sheet lists the products of one count in serial order with the counted quantity, the result, who submitted it and who verified it. Choose the dates, pick a sheet or all sheets, then press Print. Every sheet starts on a new page.</div></div>
+    ${shown.length ? shown.map(sheetHtml).join('') : '<div class="empty">No counts found in the selected dates.</div>'}`;
+  repBind(null);
+  $('#csk').onchange = e => { csKey = e.target.value; render(); };
 }
 
 /* ---------- Products ---------- */
